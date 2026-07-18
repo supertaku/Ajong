@@ -25,7 +25,7 @@ const clipChain = [
   { id: "confidence", desktop: "/videos/scroll-world/confidence.mp4", mobile: "/videos/scroll-world/confidence-m.mp4", poster: scenes[3].landscape },
 ] as const;
 
-const PLAYBACK_RATE = 1.5;
+const PLAYBACK_RATE = 2;
 
 function SceneCopy({ scene, index, active }: { scene: typeof scenes[number]; index: number; active: boolean }) {
   const { t } = useApp();

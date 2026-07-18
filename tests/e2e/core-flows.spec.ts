@@ -29,6 +29,7 @@ test("one wheel step plays a complete chapter and the visible control plays the 
   await page.mouse.wheel(0, 120);
   await expect(playControl).toBeDisabled();
   await expect(page.locator('video[data-clip="family"]')).toHaveClass(/active/);
+  await expect.poll(() => page.locator('video[data-clip="family"]').evaluate((video) => (video as HTMLVideoElement).playbackRate)).toBe(2);
 
   await page.locator('video[data-clip="family"]').evaluate((video) => video.dispatchEvent(new Event("ended", { bubbles: true })));
   await expect(page.locator('video[data-clip="family-choices"]')).toHaveClass(/active/);

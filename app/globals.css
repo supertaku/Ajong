@@ -363,9 +363,13 @@ input[type="checkbox"], input[type="radio"] { width: 19px; min-height: 19px; acc
 .sort-field { margin-left: auto; padding-left: 11px; display: flex; align-items: center; color: var(--muted); font-size: .78rem; font-weight: 700; }
 .sort-field select { min-height: 42px; border: 0; }
 .mobile-view-toggle { display: none; }
-.filter-panel { margin-bottom: 20px; padding: 22px; display: grid; grid-template-columns: 1.5fr 1fr 180px 180px auto; gap: 22px; align-items: end; border-block: 1px solid var(--line); background: var(--paper); }
+.filter-panel { position: relative; isolation: isolate; margin-top: 14px; margin-bottom: 28px; padding: 46px 28px 30px 58px; display: grid; grid-template-columns: 1.5fr 1fr 180px 180px auto; gap: 22px; align-items: end; overflow: visible; border: 1px solid color-mix(in srgb, var(--line) 82%, #b9a77d); border-radius: 18px; background-color: var(--paper); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, color-mix(in srgb, var(--sage) 22%, transparent) 32px, transparent 33px); box-shadow: 0 16px 36px rgba(52, 61, 48, .1), 0 2px 0 color-mix(in srgb, var(--line) 65%, transparent); }
+.filter-panel::before { content: ""; position: absolute; z-index: 3; top: -12px; right: 30px; left: 46px; height: 24px; border-radius: 8px; background: repeating-linear-gradient(90deg, transparent 0 18px, color-mix(in srgb, var(--forest) 74%, #fff) 18px 22px, transparent 22px 36px); filter: drop-shadow(0 3px 1px rgba(0, 0, 0, .14)); pointer-events: none; }
+.filter-panel::after { content: ""; position: absolute; z-index: 0; top: 0; bottom: 0; left: 38px; width: 1px; background: color-mix(in srgb, var(--clay) 42%, transparent); pointer-events: none; }
+.filter-panel > *:not(.filter-pencil-cursor) { position: relative; z-index: 1; }
 .filter-panel fieldset { min-width: 0; margin: 0; border: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 13px; }
 .filter-panel legend, .filter-panel > label { font-size: .78rem; font-weight: 850; }
+.filter-panel select { background-color: color-mix(in srgb, var(--field) 92%, transparent); }
 .filter-checkbox { position: relative; display: inline-flex; align-items: center; gap: 3px; overflow: visible; color: var(--ink); font-size: .78rem; cursor: pointer; user-select: none; }
 .filter-checkbox input { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .filter-checkbox__mark { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 9px; transition: background-color .18s ease, transform .18s ease; }
@@ -379,7 +383,28 @@ input[type="checkbox"], input[type="radio"] { width: 19px; min-height: 19px; acc
 .filter-checkbox input:disabled ~ * { opacity: .45; cursor: not-allowed; }
 .filter-checkbox input:disabled { cursor: not-allowed; }
 .filter-checkbox__label { line-height: 1.25; }
+.filter-pencil-cursor { --pencil-x: 0px; --pencil-y: 0px; position: absolute; z-index: 20; top: 0; left: 0; display: none; width: 43px; height: 12px; filter: drop-shadow(1px 2px 1px rgba(0,0,0,.24)); pointer-events: none; transform: translate(var(--pencil-x), calc(var(--pencil-y) - 6px)) rotate(-34deg); transform-origin: 0 6px; will-change: transform; }
+.filter-pencil-cursor > span { position: absolute; top: 1px; height: 10px; }
+.pencil-point { top: 4px !important; left: 0; width: 0; height: 0 !important; border-top: 2px solid transparent; border-bottom: 2px solid transparent; border-right: 3px solid #1f2522; }
+.pencil-wood { top: 1px !important; left: 3px; width: 0; height: 0 !important; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 7px solid #dfbd86; }
+.pencil-body { left: 10px; width: 20px; border-block: 1px solid #b98518; background: linear-gradient(to bottom, #ffe783 0 22%, #f3c84e 22% 72%, #dca82b 72% 100%); }
+.pencil-ferrule { left: 30px; width: 6px; border-block: 1px solid #8c918e; background: repeating-linear-gradient(90deg, #d9ddda 0 2px, #aeb5b1 2px 3px); }
+.pencil-eraser { left: 36px; width: 7px; border: 1px solid #cf7777; border-left: 0; border-radius: 0 5px 5px 0; background: linear-gradient(#f8b8b4, #ed9696); }
+.filter-pencil-cursor.writing { animation: pencil-write .4s cubic-bezier(.45, 0, .3, 1); }
 .clear-filters { min-height: 44px; border: 0; background: transparent; color: var(--clay-dark); font-weight: 800; cursor: pointer; }
+
+@keyframes pencil-write {
+  0%, 100% { transform: translate(var(--pencil-x), calc(var(--pencil-y) - 6px)) rotate(-34deg); }
+  22% { transform: translate(calc(var(--pencil-x) - 5px), calc(var(--pencil-y) - 2px)) rotate(-42deg); }
+  45% { transform: translate(calc(var(--pencil-x) + 4px), calc(var(--pencil-y) - 7px)) rotate(-28deg); }
+  68% { transform: translate(calc(var(--pencil-x) - 3px), calc(var(--pencil-y) - 1px)) rotate(-40deg); }
+  84% { transform: translate(calc(var(--pencil-x) + 2px), calc(var(--pencil-y) - 6px)) rotate(-31deg); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .filter-notepad, .filter-notepad * { cursor: none !important; }
+  .filter-pencil-cursor.visible { display: block; }
+}
 .search-layout { min-height: 700px; display: grid; grid-template-columns: minmax(570px, 54%) 1fr; border-top: 1px solid var(--line); }
 .search-results { padding: 24px max(25px, calc((100vw - 1280px) / 2)); padding-right: 24px; }
 .search-result-label { margin-bottom: 18px; display: flex; align-items: baseline; gap: 10px; }
@@ -633,7 +658,7 @@ input[type="checkbox"], input[type="radio"] { width: 19px; min-height: 19px; acc
   .mobile-view-toggle button.active { background: var(--forest); color: #fff; }
   .sort-field { grid-column: 1 / -1; width: 100%; }
   .sort-field select { flex: 1; }
-  .filter-panel { grid-template-columns: 1fr; }
+  .filter-panel { grid-template-columns: 1fr; padding: 42px 20px 26px 44px; }
   .search-layout { display: block; min-height: 600px; }
   .search-results { padding: 20px 14px 70px; }
   .search-property-grid { grid-template-columns: repeat(2, 1fr); }
@@ -658,6 +683,9 @@ input[type="checkbox"], input[type="radio"] { width: 19px; min-height: 19px; acc
   .theme-switch { --toggle-size: 10px; }
   .settings-hero { min-height: auto; padding-top: 55px; }
   .settings-card { border-radius: 24px; }
+  .filter-panel { padding-inline: 36px 16px; border-radius: 15px; }
+  .filter-panel::before { right: 18px; left: 28px; }
+  .filter-panel::after { left: 25px; }
   .scroll-journey { height: calc(100svh - 68px); min-height: 620px; }
   .skip-journey { top: 70px; right: 12px; }
   .journey-controls { top: 12px; left: 12px; }

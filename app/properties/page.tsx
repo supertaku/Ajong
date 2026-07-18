@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { List, Map, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useApp } from "@/app/app-provider";
 import { CompareTray } from "@/components/compare-tray";
 import { FilterCheckbox } from "@/components/filter-checkbox";
@@ -21,7 +21,32 @@ export default function PropertiesPage() {
   const [sort, setSort] = useState("recommended");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const pencilRef = useRef<HTMLSpanElement>(null);
+  const pencilTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toggle = <T,>(values: T[], value: T) => values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+
+  useEffect(() => () => {
+    if (pencilTimerRef.current) clearTimeout(pencilTimerRef.current);
+  }, []);
+
+  const movePencil = (event: ReactPointerEvent<HTMLElement>) => {
+    const pencil = pencilRef.current;
+    if (!pencil) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    pencil.style.setProperty("--pencil-x", `${event.clientX - bounds.left}px`);
+    pencil.style.setProperty("--pencil-y", `${event.clientY - bounds.top}px`);
+    pencil.classList.add("visible");
+  };
+
+  const animatePencil = () => {
+    const pencil = pencilRef.current;
+    if (!pencil) return;
+    pencil.classList.remove("writing");
+    void pencil.offsetWidth;
+    pencil.classList.add("writing");
+    if (pencilTimerRef.current) clearTimeout(pencilTimerRef.current);
+    pencilTimerRef.current = setTimeout(() => pencil.classList.remove("writing"), 420);
+  };
   const filtered = useMemo(() => {
     const result = listings.filter((listing) =>
       (!filters.areas.length || filters.areas.includes(listing.areaGroup)) &&
@@ -41,7 +66,34 @@ export default function PropertiesPage() {
         <div className="mobile-view-toggle"><button type="button" className={mobileView === "list" ? "active" : ""} onClick={() => setMobileView("list")}><List size={16} />{t("search.list")}</button><button type="button" className={mobileView === "map" ? "active" : ""} onClick={() => setMobileView("map")}><Map size={16} />{t("search.map")}</button></div>
         <label className="sort-field">{t("search.sort")}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">City A–Z</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="space">Largest floor area</option></select></label>
       </div>
-      {filtersOpen && <section className="filter-panel page-shell" aria-label="Property filters"><fieldset><legend>Area</legend>{areaOptions.map((area) => <FilterCheckbox key={area} label={area} checked={filters.areas.includes(area)} onChange={() => setFilters((current) => ({ ...current, areas: toggle(current.areas, area) }))} />)}</fieldset><fieldset><legend>Home type</legend>{typeOptions.map((type) => <FilterCheckbox key={type.value} label={type.label} checked={filters.propertyTypes.includes(type.value)} onChange={() => setFilters((current) => ({ ...current, propertyTypes: toggle(current.propertyTypes, type.value) }))} />)}</fieldset><label>Maximum price<select value={filters.maxPrice ?? ""} onChange={(event) => setFilters((current) => ({ ...current, maxPrice: event.target.value ? Number(event.target.value) : null }))}><option value="">Any price</option><option value={4_000_000}>₱4M</option><option value={6_000_000}>₱6M</option><option value={8_000_000}>₱8M</option><option value={10_000_000}>₱10M</option></select></label><label>Minimum bedrooms<select value={filters.minBedrooms} onChange={(event) => setFilters((current) => ({ ...current, minBedrooms: Number(event.target.value) }))}><option value={0}>Any</option><option value={1}>1+</option><option value={2}>2+</option><option value={3}>3+</option><option value={4}>4+</option></select></label><button type="button" className="clear-filters" onClick={() => setFilters(EMPTY_FILTERS)}><X size={15} />{t("search.clear")}</button></section>}
+      {filtersOpen && (
+        <section
+          className="filter-panel filter-notepad page-shell"
+          aria-label="Property filters"
+          onPointerEnter={movePencil}
+          onPointerMove={movePencil}
+          onPointerLeave={() => pencilRef.current?.classList.remove("visible")}
+        >
+          <fieldset>
+            <legend>Area</legend>
+            {areaOptions.map((area) => <FilterCheckbox key={area} label={area} checked={filters.areas.includes(area)} onChange={() => { setFilters((current) => ({ ...current, areas: toggle(current.areas, area) })); animatePencil(); }} />)}
+          </fieldset>
+          <fieldset>
+            <legend>Home type</legend>
+            {typeOptions.map((type) => <FilterCheckbox key={type.value} label={type.label} checked={filters.propertyTypes.includes(type.value)} onChange={() => { setFilters((current) => ({ ...current, propertyTypes: toggle(current.propertyTypes, type.value) })); animatePencil(); }} />)}
+          </fieldset>
+          <label>Maximum price<select value={filters.maxPrice ?? ""} onChange={(event) => setFilters((current) => ({ ...current, maxPrice: event.target.value ? Number(event.target.value) : null }))}><option value="">Any price</option><option value={4_000_000}>₱4M</option><option value={6_000_000}>₱6M</option><option value={8_000_000}>₱8M</option><option value={10_000_000}>₱10M</option></select></label>
+          <label>Minimum bedrooms<select value={filters.minBedrooms} onChange={(event) => setFilters((current) => ({ ...current, minBedrooms: Number(event.target.value) }))}><option value={0}>Any</option><option value={1}>1+</option><option value={2}>2+</option><option value={3}>3+</option><option value={4}>4+</option></select></label>
+          <button type="button" className="clear-filters" onClick={() => setFilters(EMPTY_FILTERS)}><X size={15} />{t("search.clear")}</button>
+          <span ref={pencilRef} className="filter-pencil-cursor" aria-hidden="true">
+            <span className="pencil-eraser" />
+            <span className="pencil-ferrule" />
+            <span className="pencil-body" />
+            <span className="pencil-wood" />
+            <span className="pencil-point" />
+          </span>
+        </section>
+      )}
       <div className="search-layout">
         <section className={`search-results ${mobileView === "map" ? "mobile-hidden" : ""}`} aria-label="Property results">
           <div className="search-result-label"><strong>{filtered.length} of 48</strong><span>Filters never change the map and list separately.</span></div>

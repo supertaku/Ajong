@@ -13,7 +13,7 @@ const collections = [
 
 export default function HomePage() {
   return <>
-    <section className="hero"><div className="container"><div className="hero-copy"><h1>Find a place that <span>fits your life.</span></h1><p>Long-term homes and student rentals across Metro Manila, ready when you are.</p></div><SearchBar /></div></section>
+    <section className="hero"><div className="container"><SearchBar /></div></section>
     <section className="city-strip"><div className="container"><div className="city-chips">{metroCities.map((city) => <Link className="chip" key={city} href={`/properties?where=${encodeURIComponent(city)}`}>{city}</Link>)}</div></div></section>
     {collections.map((collection, sectionIndex) => <section className="page-section" key={collection.title}><div className="container"><div className="section-heading"><div><h2>{collection.title}</h2><p>{collection.body}</p></div><Link href="/properties">Show all</Link></div><div className="rental-row">{collection.items.map((listing, index) => <PropertyCard key={listing.id} listing={listing} priority={sectionIndex === 0 && index < 4} />)}</div></div></section>)}
   </>;

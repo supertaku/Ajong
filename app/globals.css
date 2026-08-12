@@ -18,4 +18,30 @@
 @media(max-width:860px){:root{--header:68px}.container{width:calc(100% - 32px)}.site-header{height:var(--header)}.header-inner{width:calc(100% - 28px);grid-template-columns:1fr auto}.home-tabs,.host-link,.header-actions>.round-button{display:none}.profile-menu{right:0;top:59px}.mobile-bottom-nav{position:fixed;z-index:650;left:0;right:0;bottom:0;height:68px;padding:7px 15px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(255,253,248,.97)}.mobile-bottom-nav a,.mobile-bottom-nav button{display:grid;place-items:center;gap:2px;border:0;background:transparent;font-size:.68rem}.hero{padding-top:25px}.hero-copy h1{font-size:2.65rem}.search-bar{grid-template-columns:1fr auto;min-height:64px;border-radius:14px}.search-field{display:none}.search-field:first-child{display:flex;border:0}.search-submit{width:48px;padding:0;justify-content:center}.search-submit span{display:none}.property-grid{grid-template-columns:repeat(2,1fr)}.results-header{top:var(--header)}.results-header .search-bar{display:none}.results-layout{display:block}.results-list{padding:24px 16px 100px}.results-map{position:fixed;z-index:580;inset:var(--header) 0 68px;height:auto;display:none}.results-layout.map-visible .results-map{display:block}.results-layout.map-visible .results-list{display:none}.map-toggle{display:flex;align-items:center;gap:8px}.quick-filters{padding-top:2px}.detail-heading{align-items:start}.detail-actions button span{display:none}.gallery-grid{height:430px;grid-template-columns:2fr 1fr}.gallery-grid button:nth-of-type(4),.gallery-grid button:nth-of-type(5){display:none}.detail-layout{grid-template-columns:1fr;padding-top:28px}.booking-aside{grid-row:1}.booking-card{position:static}.reviews-grid{grid-template-columns:1fr}.checkout-layout{grid-template-columns:1fr}.reservation-summary{position:static;grid-row:1}.wishlist-grid,.trip-grid,.help-grid{grid-template-columns:repeat(2,1fr)}.modal-backdrop{padding:0;align-items:end}.modal-panel{max-height:92dvh;border-radius:18px 18px 0 0}.modal-fullscreen{width:100vw;height:100dvh;max-height:none;border-radius:0}.site-footer{padding-bottom:90px}}
 @media(max-width:560px){.page-section{padding:34px 0}.hero-copy h1{font-size:2.25rem}.section-heading{align-items:start}.section-heading a{display:none}.rental-row{grid-auto-columns:82%}.property-grid,.results-list .property-grid{grid-template-columns:1fr;gap:28px}.property-photo{aspect-ratio:1.18}.results-copy h1{font-size:1.45rem}.modal-content{padding:20px}.suggestion-list{grid-template-columns:1fr}.lease-grid{grid-template-columns:repeat(3,1fr)}.form-grid,.check-grid{grid-template-columns:1fr}.option-grid{grid-template-columns:repeat(2,1fr)}.detail-page{padding-top:16px}.detail-heading{display:block}.detail-actions{margin-top:10px}.gallery-grid{height:310px;display:block;border-radius:14px}.gallery-grid button{display:none!important}.gallery-grid button:first-child{display:block!important;width:100%;height:100%}.show-photos{display:flex!important}.detail-layout{gap:25px}.listing-summary h2{font-size:1.2rem}.amenity-grid{grid-template-columns:1fr}.nearby-grid{grid-template-columns:1fr}.gallery-modal-grid{display:block}.gallery-modal-grid>div{min-height:320px;margin-bottom:10px}.share-grid{grid-template-columns:1fr}.checkout-layout{padding:24px 0;gap:25px}.checkout-title{margin-bottom:10px}.summary-listing{display:block}.summary-image{width:100%;margin-bottom:12px}.wishlist-grid,.trip-grid,.help-grid{grid-template-columns:1fr}.faq-list{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-wrap:wrap}.toast{bottom:82px;width:calc(100% - 32px);text-align:center}}
 .share-grid a{min-height:58px;display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--white);font-weight:700}.search-submit,.button.primary{background:var(--clay-dark)}.search-submit:hover,.button.primary:hover{background:var(--forest-deep)}
+
+/* Homepage discovery rows: compact fixed cards with isolated content geometry. */
+.hero{padding:24px 0 26px;background:var(--paper)}
+.hero .search-bar{max-width:1060px;box-shadow:0 10px 34px rgba(23,63,53,.11)}
+.city-strip{padding:16px 0 24px;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.city-chips{gap:8px;scrollbar-width:none}
+.city-chips::-webkit-scrollbar,.rental-row::-webkit-scrollbar{display:none}
+.chip{padding:9px 15px;font-size:.84rem}
+.page-section{padding:36px 0}
+.section-heading{margin-bottom:18px}
+.section-heading h2{font-size:clamp(1.35rem,2vw,1.55rem)}
+.section-heading p{margin-top:4px;font-size:.94rem}
+.section-heading a{font-size:.9rem}
+.rental-row{grid-auto-columns:clamp(220px,13.5vw,250px);gap:16px;overscroll-behavior-inline:contain;scrollbar-width:none;padding:0 0 10px}
+.rental-row .property-card{width:100%;overflow:hidden}
+.rental-row .property-photo{width:100%;aspect-ratio:1.05;border-radius:16px}
+.rental-row .property-copy{display:block;min-width:0;padding-top:9px}
+.rental-row .property-topline{min-width:0;gap:8px}
+.rental-row .property-topline strong{min-width:0;font-size:.88rem}
+.rental-row .property-topline span{flex:0 0 auto;gap:3px;font-size:.8rem}
+.rental-row .property-copy p{margin:2px 0;font-size:.88rem}
+.rental-row .property-copy small{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rental-row .property-price{margin-top:5px;font-size:.82rem}
+.rental-row .property-price strong{font-size:.9rem}
+@media(max-width:860px){.hero{padding:16px 0}.page-section{padding:32px 0}.rental-row{grid-auto-columns:min(245px,72vw)}}
+@media(max-width:560px){.rental-row{grid-auto-columns:76vw;gap:14px}.rental-row .property-photo{aspect-ratio:1.08}.section-heading p{font-size:.88rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}

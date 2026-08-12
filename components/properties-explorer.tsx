@@ -11,6 +11,8 @@ import {
   Building2,
   CalendarDays,
   Cctv,
+  ChevronLeft,
+  ChevronRight,
   CookingPot,
   DoorOpen,
   Dumbbell,
@@ -38,7 +40,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Modal } from "@/components/modal";
 import { LoginModal } from "@/components/login-modal";
 import { PropertyCard } from "@/components/property-card";
@@ -54,6 +56,8 @@ const PropertyMap = dynamic(() => import("@/components/property-map").then((modu
 
 const PRICE_LIMIT = 100000;
 const PRICE_STEP = 1000;
+const RESULTS_PER_PAGE = 18;
+const NEARBY_CAROUSEL_SIZE = 9;
 const amenities = ["Wi-Fi", "Air conditioning", "Kitchen", "Washer", "Security", "Elevator", "Gym", "Pool", "Study area", "Backup power", "Hot shower", "CCTV"];
 const quickAmenities = ["Wi-Fi", "Washer", "Air conditioning", "Kitchen", "Pool", "Gym", "Security"];
 const rentalTypes = Object.entries(listingTypeLabels) as [RentalType, string][];
@@ -95,6 +99,13 @@ const priceHistogram = (() => {
   return bins.map((count) => Math.max(5, Math.round((count / peak) * 58)));
 })();
 
+function paginationItems(current: number, total: number) {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "end-gap", total] as const;
+  if (current >= total - 3) return [1, "start-gap", total - 4, total - 3, total - 2, total - 1, total] as const;
+  return [1, "start-gap", current - 1, current, current + 1, "end-gap", total] as const;
+}
+
 function FilterStepper({ label, value, max, onChange }: { label: string; value: number; max: number; onChange: (value: number) => void }) {
   return (
     <div className="filter-stepper">
@@ -130,6 +141,9 @@ export function PropertiesExplorer() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [selected, setSelected] = useState<RentalListing | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [nearbySlide, setNearbySlide] = useState(0);
+  const nearbyCarouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => document.body.classList.remove("results-loading-active"), 420);
@@ -147,12 +161,51 @@ export function PropertiesExplorer() {
   const toggleAmenity = (amenity: string) => setDraft((current) => ({ ...current, amenities: current.amenities.includes(amenity) ? current.amenities.filter((item) => item !== amenity) : [...current.amenities, amenity] }));
   const toggleQuickAmenity = (amenity: string) => setFilters((current) => ({ ...current, amenities: current.amenities.includes(amenity) ? current.amenities.filter((item) => item !== amenity) : [...current.amenities, amenity] }));
   const featured = selectedFromUrl && filtered.some((listing) => listing.id === selectedFromUrl.id) ? selectedFromUrl : filtered[0];
-  const supporting = featured ? filtered.filter((listing) => listing.id !== featured.id) : filtered;
+  const orderedResults = selectedFromUrl && featured ? [featured, ...filtered.filter((listing) => listing.id !== featured.id)] : filtered;
+  const totalPages = Math.max(1, Math.ceil(orderedResults.length / RESULTS_PER_PAGE));
+  const pageResults = orderedResults.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE);
+  const pageFeatured = selectedFromUrl && currentPage === 1 ? featured : undefined;
+  const pageListings = pageFeatured ? pageResults.filter((listing) => listing.id !== pageFeatured.id) : pageResults;
+  const firstPageListings = pageListings.slice(0, 6);
+  const remainingPageListings = pageListings.slice(6);
+  const nearbyListings = useMemo(() => {
+    if (!filtered.length) return [];
+    const visibleIds = new Set(pageResults.map((listing) => listing.id));
+    const exactCity = listings.some((listing) => listing.city.toLowerCase() === search.destination.trim().toLowerCase());
+    const anchor = filtered.reduce((position, listing) => ({ latitude: position.latitude + listing.latitude / filtered.length, longitude: position.longitude + listing.longitude / filtered.length }), { latitude: 0, longitude: 0 });
+    const metroMatches = filterRentals(listings, { ...search, destination: "Metro Manila" }, filters);
+    return metroMatches
+      .filter((listing) => !visibleIds.has(listing.id) && (!exactCity || listing.city.toLowerCase() !== search.destination.trim().toLowerCase()))
+      .sort((a, b) => ((a.latitude - anchor.latitude) ** 2 + (a.longitude - anchor.longitude) ** 2) - ((b.latitude - anchor.latitude) ** 2 + (b.longitude - anchor.longitude) ** 2))
+      .slice(0, NEARBY_CAROUSEL_SIZE);
+  }, [filtered, filters, pageResults, search]);
+  const nearbyCarouselPages = Math.max(1, Math.ceil(nearbyListings.length / 3));
   const visibleAmenities = showAllAmenities ? amenities : amenities.slice(0, 6);
   const priceStyle = {
     "--range-start": `${(draft.minPrice / PRICE_LIMIT) * 100}%`,
     "--range-end": `${(draft.maxPrice / PRICE_LIMIT) * 100}%`,
   } as CSSProperties;
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setNearbySlide(0);
+  }, [filters, params]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const moveNearbyCarousel = (direction: -1 | 1) => {
+    const nextSlide = Math.min(nearbyCarouselPages - 1, Math.max(0, nearbySlide + direction));
+    setNearbySlide(nextSlide);
+    nearbyCarouselRef.current?.scrollTo({ left: nextSlide * nearbyCarouselRef.current.clientWidth, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    setNearbySlide(0);
+    window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
 
   return (
     <div className={`results-page ${selectedFromUrl ? "featured-results-page" : ""}`} onClickCapture={(event) => { if ((event.target as Element).closest(".featured-heart")) setLoginOpen(true); }}>
@@ -173,24 +226,30 @@ export function PropertiesExplorer() {
           <div className="results-copy"><h1>{filtered.length} rental{filtered.length === 1 ? "" : "s"} in {search.destination}</h1><p>Prices shown monthly • {search.leaseMonths}-month lease • {search.adults + search.children} renter{search.adults + search.children === 1 ? "" : "s"}</p></div>
           {filtered.length ? (
             <>
-              {featured && selectedFromUrl && (
-                <article className="featured-result" onMouseEnter={() => setSelected(featured)} onMouseLeave={() => setSelected(null)}>
-                  <Link href={`/properties/${featured.slug}`} className="featured-result-image"><Image src={featured.gallery[0]} alt={featured.title} fill sizes="360px" priority unoptimized /><span className="listing-badge">{featured.badge ?? "Featured rental"}</span></Link>
+              {pageFeatured && (
+                <article className="featured-result" onMouseEnter={() => setSelected(pageFeatured)} onMouseLeave={() => setSelected(null)}>
+                  <Link href={`/properties/${pageFeatured.slug}`} className="featured-result-image"><Image src={pageFeatured.gallery[0]} alt={pageFeatured.title} fill sizes="360px" priority unoptimized /><span className="listing-badge">{pageFeatured.badge ?? "Featured rental"}</span></Link>
                   <div className="featured-result-copy">
                     <button type="button" className="featured-heart" aria-label="Save rental"><Heart size={21} /></button>
-                    <div className="featured-result-kicker"><Building2 size={16} aria-hidden="true" /><span>{listingTypeLabels[featured.type]}</span><small>{featured.city}</small></div>
-                    <Link href={`/properties/${featured.slug}`} className="featured-result-title"><h2>{featured.title}</h2></Link>
+                    <div className="featured-result-kicker"><Building2 size={16} aria-hidden="true" /><span>{listingTypeLabels[pageFeatured.type]}</span><small>{pageFeatured.city}</small></div>
+                    <Link href={`/properties/${pageFeatured.slug}`} className="featured-result-title"><h2>{pageFeatured.title}</h2></Link>
                     <div className="featured-facts">
-                      <span><MapPin size={16} aria-hidden="true" />{featured.neighborhood}</span>
-                      <span><BedDouble size={17} aria-hidden="true" />{featured.bedrooms} bedroom{featured.bedrooms === 1 ? "" : "s"} · {featured.beds} bed{featured.beds === 1 ? "" : "s"}</span>
-                      <span><Bath size={16} aria-hidden="true" />{featured.bathrooms} bath</span>
+                      <span><MapPin size={16} aria-hidden="true" />{pageFeatured.neighborhood}</span>
+                      <span><BedDouble size={17} aria-hidden="true" />{pageFeatured.bedrooms} bedroom{pageFeatured.bedrooms === 1 ? "" : "s"} · {pageFeatured.beds} bed{pageFeatured.beds === 1 ? "" : "s"}</span>
+                      <span><Bath size={16} aria-hidden="true" />{pageFeatured.bathrooms} bath</span>
                     </div>
-                    <div className="featured-availability"><CalendarDays size={17} aria-hidden="true" /><span>Available {new Date(featured.availableFrom).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</span></div>
-                    <footer className="featured-result-footer"><div className="featured-price"><strong>{peso(featured.monthlyRent)}</strong><span>per month</span></div><div className="featured-rating" aria-label={`${featured.rating} out of 5 from ${featured.reviewCount} reviews`}><Star size={16} fill="currentColor" aria-hidden="true" /><strong>{featured.rating}</strong><span>{featured.reviewCount} reviews</span></div></footer>
+                    <div className="featured-availability"><CalendarDays size={17} aria-hidden="true" /><span>Available {new Date(pageFeatured.availableFrom).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</span></div>
+                    <footer className="featured-result-footer"><div className="featured-price"><strong>{peso(pageFeatured.monthlyRent)}</strong><span>per month</span></div><div className="featured-rating" aria-label={`${pageFeatured.rating} out of 5 from ${pageFeatured.reviewCount} reviews`}><Star size={16} fill="currentColor" aria-hidden="true" /><strong>{pageFeatured.rating}</strong><span>{pageFeatured.reviewCount} reviews</span></div></footer>
                   </div>
                 </article>
               )}
-              <div className="property-grid">{supporting.map((listing, index) => <PropertyCard listing={listing} key={listing.id} priority={!selectedFromUrl && index < 4} onHover={(id) => setSelected(listings.find((item) => item.id === id) ?? null)} />)}</div>
+              <div className="property-grid">{firstPageListings.map((listing, index) => <PropertyCard listing={listing} key={listing.id} priority={currentPage === 1 && !pageFeatured && index < 4} onHover={(id) => setSelected(listings.find((item) => item.id === id) ?? null)} />)}</div>
+              {nearbyListings.length > 0 && <section className="nearby-locations-section" aria-labelledby="nearby-locations-title">
+                <header className="nearby-locations-header"><h2 id="nearby-locations-title">Available in nearby locations</h2><div className="nearby-carousel-controls"><span>{nearbySlide + 1} / {nearbyCarouselPages}</span><button type="button" onClick={() => moveNearbyCarousel(-1)} disabled={nearbySlide === 0} aria-label="Previous nearby homes"><ChevronLeft size={20} /></button><button type="button" onClick={() => moveNearbyCarousel(1)} disabled={nearbySlide >= nearbyCarouselPages - 1} aria-label="Next nearby homes"><ChevronRight size={20} /></button></div></header>
+                <div className="nearby-carousel-track" ref={nearbyCarouselRef}>{nearbyListings.map((listing) => <PropertyCard listing={listing} key={`nearby-${listing.id}`} discoveryLink onHover={(id) => setSelected(listings.find((item) => item.id === id) ?? null)} />)}</div>
+              </section>}
+              {remainingPageListings.length > 0 && <div className="property-grid results-continuation-grid">{remainingPageListings.map((listing) => <PropertyCard listing={listing} key={listing.id} onHover={(id) => setSelected(listings.find((item) => item.id === id) ?? null)} />)}</div>}
+              {totalPages > 1 && <nav className="results-pagination" aria-label="Property results pages"><button type="button" className="pagination-arrow" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} aria-label="Previous page"><ChevronLeft size={19} /></button>{paginationItems(currentPage, totalPages).map((item) => typeof item === "number" ? <button type="button" className={item === currentPage ? "current" : ""} aria-current={item === currentPage ? "page" : undefined} onClick={() => goToPage(item)} key={item}>{item}</button> : <span aria-hidden="true" key={item}>...</span>)}<button type="button" className="pagination-arrow" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Next page"><ChevronRight size={19} /></button></nav>}
             </>
           ) : (
             <div className="empty-state"><h2>No rentals match those choices</h2><p>Try a nearby area, a higher price range, or fewer amenities.</p><button type="button" className="button primary" onClick={() => setFilters(DEFAULT_FILTERS)}>Clear filters</button></div>

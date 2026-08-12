@@ -5,8 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Accessibility,
+  Bath,
+  BedDouble,
   Building,
   Building2,
+  CalendarDays,
   Cctv,
   CookingPot,
   DoorOpen,
@@ -18,6 +21,7 @@ import {
   LampDesk,
   List,
   Map as MapIcon,
+  MapPin,
   Minus,
   ParkingCircle,
   PawPrint,
@@ -173,12 +177,16 @@ export function PropertiesExplorer() {
                 <article className="featured-result" onMouseEnter={() => setSelected(featured)} onMouseLeave={() => setSelected(null)}>
                   <Link href={`/properties/${featured.slug}`} className="featured-result-image"><Image src={featured.gallery[0]} alt={featured.title} fill sizes="360px" priority unoptimized /><span className="listing-badge">{featured.badge ?? "Featured rental"}</span></Link>
                   <div className="featured-result-copy">
-                    <button type="button" className="featured-heart" aria-label="Save rental"><Heart size={23} /></button>
-                    <small>{listingTypeLabels[featured.type]} in {featured.city}</small>
-                    <Link href={`/properties/${featured.slug}`}><h2>{featured.title}</h2></Link>
-                    <p>{featured.neighborhood} • {featured.bedrooms} bedroom{featured.bedrooms === 1 ? "" : "s"} • {featured.beds} bed{featured.beds === 1 ? "" : "s"} • {featured.bathrooms} bath</p>
-                    <span className="featured-availability">Available {new Date(featured.availableFrom).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</span>
-                    <div className="featured-price"><strong>{peso(featured.monthlyRent)}</strong> month <span>• <Star size={15} fill="currentColor" /> {featured.rating} ({featured.reviewCount})</span></div>
+                    <button type="button" className="featured-heart" aria-label="Save rental"><Heart size={21} /></button>
+                    <div className="featured-result-kicker"><Building2 size={16} aria-hidden="true" /><span>{listingTypeLabels[featured.type]}</span><small>{featured.city}</small></div>
+                    <Link href={`/properties/${featured.slug}`} className="featured-result-title"><h2>{featured.title}</h2></Link>
+                    <div className="featured-facts">
+                      <span><MapPin size={16} aria-hidden="true" />{featured.neighborhood}</span>
+                      <span><BedDouble size={17} aria-hidden="true" />{featured.bedrooms} bedroom{featured.bedrooms === 1 ? "" : "s"} · {featured.beds} bed{featured.beds === 1 ? "" : "s"}</span>
+                      <span><Bath size={16} aria-hidden="true" />{featured.bathrooms} bath</span>
+                    </div>
+                    <div className="featured-availability"><CalendarDays size={17} aria-hidden="true" /><span>Available {new Date(featured.availableFrom).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</span></div>
+                    <footer className="featured-result-footer"><div className="featured-price"><strong>{peso(featured.monthlyRent)}</strong><span>per month</span></div><div className="featured-rating" aria-label={`${featured.rating} out of 5 from ${featured.reviewCount} reviews`}><Star size={16} fill="currentColor" aria-hidden="true" /><strong>{featured.rating}</strong><span>{featured.reviewCount} reviews</span></div></footer>
                   </div>
                 </article>
               )}

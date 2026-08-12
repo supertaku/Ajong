@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BedDouble, Building2, Check, CircleCheck, Copy, Flag, Gift, Grid3X3, Heart, ImageIcon, KeyRound, Leaf, Mail, Map as MapIcon, MapPin, MessageCircle, Share2, ShieldCheck, Sofa, SprayCan, Star, Tag, Wifi } from "lucide-react";
+import { BedDouble, Building2, Check, CigaretteOff, CircleCheck, Clock3, Copy, Flag, Gift, Grid3X3, Heart, ImageIcon, KeyRound, Leaf, Mail, Map as MapIcon, MapPin, MessageCircle, Moon, Search, Share2, ShieldCheck, Sofa, SprayCan, Star, Tag, UsersRound, Wifi } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/app/app-provider";
 import { useChat } from "@/app/chat-provider";
@@ -35,6 +35,13 @@ const reviewTopics = [
   { label: "Location", count: 3, icon: MapPin },
 ];
 
+const houseRuleDetails = [
+  { icon: CigaretteOff, helper: "Keep the home smoke-free." },
+  { icon: Moon, helper: "Help keep evenings peaceful for neighbors." },
+  { icon: UsersRound, helper: "Only confirmed residents may stay overnight." },
+  { icon: Clock3, helper: "Plan visits within the residence's approved hours." },
+];
+
 function CalendarMonth({ date, selected }: { date: Date; selected: string }) {
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -49,6 +56,7 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
   const { isSaved, showToast } = useApp();
   const { openOwnerThread } = useChat();
   const [modal, setModal] = useState<DetailModal>(null);
+  const [reviewQuery, setReviewQuery] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
   const [sectionNavVisible, setSectionNavVisible] = useState(false);
@@ -59,6 +67,11 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
   const pricing = reservationPricing(listing.monthlyRent);
   const saved = isSaved(listing.id);
   const reserveHref = `/reserve/${listing.slug}?moveIn=${moveIn}&lease=${lease}&adults=${adults}&children=${children}&pets=${pets}`;
+  const modalReviews = listing.reviews.concat(listing.reviews);
+  const normalizedReviewQuery = reviewQuery.trim().toLowerCase();
+  const visibleModalReviews = normalizedReviewQuery
+    ? modalReviews.filter((review) => `${review.author} ${review.date} ${review.text}`.toLowerCase().includes(normalizedReviewQuery))
+    : modalReviews;
   const openPhotoTour = (index?: number) => router.push(`/properties/${listing.slug}/photos${index === undefined ? "" : `#photo-${index + 1}`}`);
   useEffect(() => {
     const gallery = galleryRef.current;
@@ -119,18 +132,48 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
         <div className="reviews-grid">{listing.reviews.slice(0, 4).map((review) => <article className="review-card" key={review.id}><div className="review-author"><span>{review.author[0]}</span><div><strong>{review.author}</strong><small>{review.date}</small></div></div><div className="review-stars" aria-label={`${review.rating} out of 5 stars`}>★★★★★</div><p>{review.text}</p></article>)}</div>
         <button className="button secondary" type="button" onClick={() => setModal("reviews")}>Show all {listing.reviewCount} reviews</button>
       </section>
-      <section id="location"><h2>Where you&apos;ll live</h2><p>{listing.neighborhood}, {listing.city}</p><button type="button" className="detail-map" onClick={() => setModal("map")} aria-label="Open full map"><PropertyMap listings={[listing]} selectedId={listing.id} /></button><div className="nearby-grid">{listing.nearby.map((place) => <div className="nearby-card" key={place.name}><strong>{place.name}</strong><small>{place.minutes} minutes · {place.kind}</small></div>)}</div></section>
-      <section><h2>House rules</h2><div className="rules-list">{listing.houseRules.slice(0, 3).map((rule) => <div key={rule}>{rule}</div>)}</div><button className="button secondary" type="button" onClick={() => setModal("rules")}>Show all rules</button></section>
-      <section className="listing-summary"><div><h2>Meet your host, {listing.host.name}</h2><p>{listing.host.yearsHosting} years hosting · {listing.host.responseRate}% response rate</p></div><div className="listing-summary-actions"><button className="button secondary" type="button" onClick={() => setModal("host")}>Host details</button><button className="button secondary" type="button" onClick={() => openOwnerThread(listing)}><MessageCircle size={18} />Message host</button></div></section>
+      <section id="location" className="location-section">
+        <div className="detail-section-heading"><h2>Where you&apos;ll live</h2><p>Explore {listing.neighborhood}, {listing.city} and nearby essentials.</p></div>
+        <div className="location-explorer">
+          <button type="button" className="detail-map" onClick={() => setModal("map")} aria-label="Open full map"><PropertyMap listings={[listing]} selectedId={listing.id} /></button>
+          <aside className="nearby-panel" aria-label="Nearby places"><div className="nearby-location-summary"><span><MapPin size={21} aria-hidden="true" /></span><div><small>Neighborhood</small><strong>{listing.neighborhood}</strong><p>{listing.city}</p></div></div><div className="nearby-panel-heading"><h3>Nearby places</h3><span>{listing.nearby.length}</span></div><div className="nearby-grid">{listing.nearby.map((place) => <div className="nearby-card" key={place.name}><span><MapPin size={17} aria-hidden="true" /></span><div><strong>{place.name}</strong><small>{place.minutes} minutes · {place.kind}</small></div></div>)}</div><button type="button" className="location-map-button" onClick={() => setModal("map")}>Explore full map</button></aside>
+        </div>
+      </section>
+      <section className="house-rules-section">
+        <div className="detail-section-heading"><h2>House rules</h2><p>A few things to know before you reserve.</p></div>
+        <div className="house-rule-grid">{listing.houseRules.slice(0, 3).map((rule, index) => { const RuleIcon = houseRuleDetails[index]?.icon ?? Check; return <div className="house-rule-item" key={rule}><span><RuleIcon size={21} aria-hidden="true" /></span><div><strong>{rule}</strong><small>{houseRuleDetails[index]?.helper}</small></div></div>; })}</div>
+        <button className="button secondary house-rules-button" type="button" onClick={() => setModal("rules")}>Show all rules</button>
+      </section>
+      <section className="host-detail-section">
+        <div className="host-profile-summary"><button className="host-detail-avatar" type="button" onClick={() => setModal("host")} aria-label={`View ${listing.host.name}'s host profile`}><Image src={listing.host.avatar} alt="" fill unoptimized /><span><ShieldCheck size={15} fill="currentColor" aria-hidden="true" /></span></button><div><p className="host-section-label">Meet your host</p><h2>{listing.host.name}</h2><div className="host-detail-facts"><span><ShieldCheck size={16} aria-hidden="true" />Verified host</span><span><Clock3 size={16} aria-hidden="true" />Responds {listing.host.responseTime}</span><span>{listing.host.yearsHosting} years hosting</span></div></div></div>
+        <div className="host-detail-actions"><button className="button secondary" type="button" onClick={() => setModal("host")}>Host details</button><button className="button primary" type="button" onClick={() => openOwnerThread(listing)}><MessageCircle size={18} />Message host</button></div>
+      </section>
     </div>
     <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     <Modal open={modal === "share"} onClose={() => setModal(null)} title="Share this place"><div className="share-grid"><button type="button" onClick={() => navigator.clipboard.writeText(window.location.href).then(() => showToast("Link copied"))}><Copy size={20} />Copy link</button><button type="button" onClick={share}><Share2 size={20} />Share</button><a href={`mailto:?subject=${encodeURIComponent(listing.title)}&body=${encodeURIComponent("Take a look at this Kubo rental: ")}`}><Mail size={20} />Email</a><button type="button" onClick={() => window.open(`https://www.messenger.com/`, "_blank")}><MessageCircle size={20} />Messenger</button><button type="button" onClick={() => window.open(`viber://forward?text=${encodeURIComponent(listing.title)}`, "_blank")}><MessageCircle size={20} />Viber</button></div></Modal>
     <Modal open={modal === "amenities"} onClose={() => setModal(null)} title="What this place offers"><div className="amenity-grid">{listing.amenities.map((amenity) => <div className="amenity-item" key={amenity}><Check size={20} />{amenity}</div>)}</div></Modal>
-    <Modal open={modal === "reviews"} onClose={() => setModal(null)} title={`${listing.rating} · ${listing.reviewCount} reviews`} size="large"><label className="field-block"><span>Search reviews</span><input placeholder="Search by keyword" /></label><div className="reviews-grid">{listing.reviews.concat(listing.reviews).map((review, index) => <article className="review-card" key={`${review.id}-${index}`}><div className="review-author"><span>{review.author[0]}</span><div><strong>{review.author}</strong><small>{review.date}</small></div></div><p>{review.text}</p></article>)}</div></Modal>
+    <Modal open={modal === "reviews"} onClose={() => { setModal(null); setReviewQuery(""); }} title={`${listing.rating} · ${listing.reviewCount} reviews`} size="large" variant="reviews">
+      <div className="review-modal-body">
+        <label className="review-modal-search" htmlFor="review-search">
+          <span>Search reviews</span>
+          <div><Search size={20} aria-hidden="true" /><input id="review-search" type="search" value={reviewQuery} onChange={(event) => setReviewQuery(event.target.value)} placeholder="Search by keyword" autoComplete="off" /></div>
+        </label>
+        <p className="review-results-count" aria-live="polite">{normalizedReviewQuery ? `${visibleModalReviews.length} matching ${visibleModalReviews.length === 1 ? "review" : "reviews"}` : `Showing ${modalReviews.length} recent reviews`}</p>
+        {visibleModalReviews.length > 0 ? <div className="review-modal-grid">
+          {visibleModalReviews.map((review, index) => <article className="review-modal-card" key={`${review.id}-${index}`}>
+            <header className="review-modal-author"><span aria-hidden="true">{review.author[0]}</span><div><strong>{review.author}</strong><small>{review.date}</small></div></header>
+            <div className="review-modal-rating" aria-label={`${review.rating} out of 5 stars`}><Star size={13} fill="currentColor" aria-hidden="true" /><strong>{review.rating}.0</strong></div>
+            <p>{review.text}</p>
+          </article>)}
+        </div> : <div className="review-modal-empty"><Search size={24} aria-hidden="true" /><h3>No reviews found</h3><p>Try a different name or keyword.</p></div>}
+      </div>
+    </Modal>
     <Modal open={modal === "host"} onClose={() => setModal(null)} title={`About ${listing.host.name}`}><div className="listing-summary"><div><h2>{listing.host.name}</h2><p>Verified host · {listing.host.yearsHosting} years hosting</p></div><div className="host-avatar"><Image src={listing.host.avatar} alt={listing.host.name} fill unoptimized /></div></div><div className="price-lines"><div className="price-line"><span>Response rate</span><strong>{listing.host.responseRate}%</strong></div><div className="price-line"><span>Response time</span><strong>{listing.host.responseTime}</strong></div><div className="price-line"><span>Identity</span><strong>Verified</strong></div></div></Modal>
     <Modal open={modal === "map"} onClose={() => setModal(null)} title={`${listing.neighborhood}, ${listing.city}`} fullScreen><PropertyMap listings={[listing]} selectedId={listing.id} /></Modal>
     <Modal open={modal === "price"} onClose={() => setModal(null)} title="Price details"><div className="price-lines"><div className="price-line"><span>Monthly rent</span><strong>{peso(listing.monthlyRent)}</strong></div><div className="price-line"><span>Holding deposit, credited to first month</span><strong>{peso(pricing.holdingDeposit)}</strong></div><div className="price-line"><span>Kubo service fee</span><strong>{peso(pricing.serviceFee)}</strong></div><div className="price-line price-total"><span>Due today</span><strong>{peso(pricing.dueToday)}</strong></div><div className="price-line"><span>First-month balance due at move-in</span><strong>{peso(pricing.firstMonthBalance)}</strong></div><div className="price-line"><span>Refundable security deposit due at move-in</span><strong>{peso(pricing.securityDeposit)}</strong></div></div></Modal>
-    <Modal open={modal === "rules"} onClose={() => setModal(null)} title="House rules"><ul className="rules-list">{listing.houseRules.map((rule) => <li key={rule}>{rule}</li>)}</ul><h3 className="modal-section-title">Cancellation policy</h3><p>Cancel within 48 hours of reserving for a full refund. After that, the holding deposit is refundable until 30 days before move-in, less the service fee.</p></Modal>
+    <Modal open={modal === "rules"} onClose={() => setModal(null)} title="House rules" variant="rules">
+      <div className="rules-modal-body"><p className="rules-modal-intro">Please review these expectations before reserving.</p><div className="rules-modal-list">{listing.houseRules.map((rule, index) => { const RuleIcon = houseRuleDetails[index]?.icon ?? Check; return <div className="rules-modal-row" key={rule}><span><RuleIcon size={21} aria-hidden="true" /></span><div><strong>{rule}</strong><small>{houseRuleDetails[index]?.helper ?? "Follow the residence guidelines during your stay."}</small></div></div>; })}</div><section className="cancellation-policy-card"><span><ShieldCheck size={22} aria-hidden="true" /></span><div><h3>Cancellation policy</h3><p>Cancel within 48 hours of reserving for a full refund. After that, the holding deposit is refundable until 30 days before move-in, less the service fee.</p></div></section></div>
+    </Modal>
     <Modal open={modal === "report"} onClose={() => setModal(null)} title="Report this listing" footer={<button type="button" className="button primary wide" onClick={() => { setModal(null); showToast("Report received. Thank you."); }}>Submit report</button>}><div className="report-options">{["The information is inaccurate", "The listing looks suspicious", "The photos are misleading", "This place is no longer available", "Another concern"].map((reason) => <label key={reason}><input type="radio" name="reason" /> {reason}</label>)}</div></Modal>
     <Modal open={modal === "dates"} onClose={() => setModal(null)} title="Choose your move-in"><label className="field-block"><span>Move-in date</span><input type="date" min={listing.availableFrom} value={moveIn} onChange={(event) => setMoveIn(event.target.value)} /></label><h3 className="modal-section-title">Lease length</h3><div className="lease-grid">{[3,6,12,18,24].filter((months) => months >= listing.minimumLeaseMonths).map((months) => <button type="button" className={lease === months ? "active" : ""} key={months} onClick={() => setLease(months)}><b>{months}</b><span>months</span></button>)}</div></Modal>
     <Modal open={modal === "renters"} onClose={() => setModal(null)} title="Who is moving in?"><Counter label="Adults" helper="Ages 18 or above" min={1} max={listing.capacity} value={adults} onChange={setAdults} /><Counter label="Children" helper="Ages 0 to 17" max={listing.capacity - adults} value={children} onChange={setChildren} /><Counter label="Pets" helper={listing.petsAllowed ? "Pets are welcome" : "This home does not allow pets"} max={listing.petsAllowed ? 3 : 0} value={pets} onChange={setPets} /></Modal>

@@ -1,34 +1,45 @@
 "use client";
 
-import Map, { AttributionControl, Layer, Marker, NavigationControl, Source, type MapRef } from "react-map-gl/maplibre";
+import Map, { AttributionControl, Marker, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { compactPeso } from "@/lib/finance";
-import { listings as allListings } from "@/lib/listings";
 import type { RentalListing } from "@/lib/types";
+
+type Position = [number, number];
+type CityGeometry = { type: "Polygon"; coordinates: Position[][] } | { type: "MultiPolygon"; coordinates: Position[][][] };
+type CityFeature = { type: "Feature"; properties: { name: string; psgc: string }; geometry: CityGeometry };
+type CityBoundaries = { type: "FeatureCollection"; features: CityFeature[] };
+
+let cityBoundariesRequest: Promise<CityBoundaries> | null = null;
+
+function loadCityBoundaries() {
+  cityBoundariesRequest ??= fetch("/data/metro-manila-cities.json").then((response) => {
+    if (!response.ok) throw new Error(`Could not load city boundaries (${response.status})`);
+    return response.json() as Promise<CityBoundaries>;
+  });
+  return cityBoundariesRequest;
+}
 
 const MAP_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    positron: {
+    voyager: {
       type: "raster",
-      tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
+      tiles: ["https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
       tileSize: 256,
       attribution: "© OpenStreetMap contributors © CARTO",
-      maxzoom: 19,
+      maxzoom: 20,
     },
   },
-  layers: [{ id: "positron", type: "raster", source: "positron", minzoom: 0, maxzoom: 19 }],
+  layers: [{ id: "voyager", type: "raster", source: "voyager", minzoom: 0, maxzoom: 20 }],
 };
 
-function focusedCityArea(listings: RentalListing[], city?: string | null) {
-  const cityListings = city ? listings.filter((item) => item.city === city) : [];
-  if (!cityListings.length) return null;
-  const lngs = cityListings.map((item) => item.longitude); const lats = cityListings.map((item) => item.latitude);
-  const west = Math.min(...lngs); const east = Math.max(...lngs); const south = Math.min(...lats); const north = Math.max(...lats);
-  const lngPad = Math.max((east - west) * .28, .01); const latPad = Math.max((north - south) * .28, .008);
-  const ring = [[west - lngPad, south - latPad], [east + lngPad, south - latPad], [east + lngPad, north + latPad], [west - lngPad, north + latPad], [west - lngPad, south - latPad]];
-  return { type: "Feature" as const, properties: { city }, geometry: { type: "Polygon" as const, coordinates: [ring] } };
+function geometryBounds(geometry: CityGeometry): [[number, number], [number, number]] {
+  const positions = geometry.type === "Polygon" ? geometry.coordinates.flat() : geometry.coordinates.flat(2);
+  const lngs = positions.map(([lng]) => lng);
+  const lats = positions.map(([, lat]) => lat);
+  return [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]];
 }
 
 function listingBounds(listings: RentalListing[]): [[number, number], [number, number]] | null {
@@ -39,19 +50,76 @@ function listingBounds(listings: RentalListing[]): [[number, number], [number, n
   return [[minLng, minLat], [maxLng, maxLat]];
 }
 
-export function PropertyMap({ listings, selectedId, onSelect, focusedCity, boundaryListings = allListings }: { listings: RentalListing[]; selectedId?: string | null; onSelect?: (listing: RentalListing) => void; focusedCity?: string | null; boundaryListings?: RentalListing[] }) {
+export function PropertyMap({ listings, selectedId, onSelect, focusedCity }: { listings: RentalListing[]; selectedId?: string | null; onSelect?: (listing: RentalListing) => void; focusedCity?: string | null }) {
   const mapRef = useRef<MapRef>(null);
   const shellRef = useRef<HTMLDivElement>(null);
+  const [cityBoundaries, setCityBoundaries] = useState<CityBoundaries | null>(null);
   const bounds = useMemo(() => listingBounds(listings), [listings]);
   const inferredCity = focusedCity ?? (listings.length && listings.every((item) => item.city === listings[0].city) ? listings[0].city : null);
-  const cityArea = useMemo(() => focusedCityArea(boundaryListings, inferredCity), [boundaryListings, inferredCity]);
-  const cityBounds = useMemo<[[number, number], [number, number]] | null>(() => {
-    const ring = cityArea?.geometry.coordinates[0];
-    if (!ring) return null;
-    const lngs = ring.map(([lng]) => lng); const lats = ring.map(([, lat]) => lat);
-    return [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]];
+  const cityArea = useMemo(() => cityBoundaries?.features.find((feature) => feature.properties.name === inferredCity) ?? null, [cityBoundaries, inferredCity]);
+  const cityBounds = useMemo(() => cityArea ? geometryBounds(cityArea.geometry) : null, [cityArea]);
+  useEffect(() => {
+    let active = true;
+    loadCityBoundaries().then((data) => { if (active) setCityBoundaries(data); }).catch(() => { /* Markers remain usable if the optional overlay cannot load. */ });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    const shell = shellRef.current;
+    if (!map) return;
+    let overlay: HTMLCanvasElement | null = null;
+    const drawBoundary = () => {
+      if (!cityArea) return;
+      if (!overlay) {
+        overlay = document.createElement("canvas");
+        overlay.classList.add("city-boundary-overlay");
+        overlay.setAttribute("aria-hidden", "true");
+        map.getCanvas().insertAdjacentElement("afterend", overlay);
+      }
+      const mapCanvas = map.getCanvas();
+      const pixelRatio = window.devicePixelRatio || 1;
+      overlay.width = Math.round(mapCanvas.clientWidth * pixelRatio);
+      overlay.height = Math.round(mapCanvas.clientHeight * pixelRatio);
+      const context = overlay.getContext("2d");
+      if (!context) return;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.beginPath();
+      const polygons = cityArea.geometry.type === "Polygon" ? [cityArea.geometry.coordinates] : cityArea.geometry.coordinates;
+      let pointCount = 0;
+      polygons.forEach((polygon) => polygon.forEach((ring) => {
+        ring.forEach(([lng, lat], index) => {
+          const point = map.project([lng, lat]);
+          if (index) context.lineTo(point.x, point.y); else context.moveTo(point.x, point.y);
+          pointCount += 1;
+        });
+        context.closePath();
+      }));
+      context.fillStyle = "rgba(201, 110, 69, .12)";
+      context.fill("evenodd");
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.strokeStyle = "#fffdf8";
+      context.lineWidth = 8;
+      context.stroke();
+      context.strokeStyle = "#9f4e2f";
+      context.lineWidth = 4;
+      context.stroke();
+      overlay.dataset.points = String(pointCount);
+      if (shell) shell.dataset.focusedCity = cityArea.properties.name;
+    };
+    if (map.isStyleLoaded()) drawBoundary();
+    else map.once("load", drawBoundary);
+    map.on("move", drawBoundary);
+    map.on("resize", drawBoundary);
+    return () => {
+      map.off("load", drawBoundary);
+      map.off("move", drawBoundary);
+      map.off("resize", drawBoundary);
+      overlay?.remove();
+      if (shell) delete shell.dataset.focusedCity;
+    };
   }, [cityArea]);
-  useEffect(() => { const target = cityBounds ?? bounds; if (target) mapRef.current?.fitBounds(target, { padding: 54, maxZoom: 12, duration: 650 }); }, [bounds, cityBounds]);
+  useEffect(() => { const target = cityBounds ?? bounds; if (target) mapRef.current?.fitBounds(target, { padding: 64, maxZoom: 13, duration: 650 }); }, [bounds, cityBounds]);
   useEffect(() => { const selected = listings.find((item) => item.id === selectedId); if (selected) mapRef.current?.easeTo({ center: [selected.longitude, selected.latitude], duration: 500 }); }, [selectedId, listings]);
   useEffect(() => {
     const shell = shellRef.current;
@@ -68,10 +136,9 @@ export function PropertyMap({ listings, selectedId, onSelect, focusedCity, bound
     attribution?.classList.remove("maplibregl-compact-show");
   });
 
-  return <div ref={shellRef} className="map-shell"><Map ref={mapRef} initialViewState={{ longitude: 121.01, latitude: 14.5995, zoom: 11 }} mapStyle={MAP_STYLE} attributionControl={false} onLoad={collapseAttribution} aria-label="Map of Metro Manila rentals">
-    <AttributionControl compact customAttribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/attributions">CARTO</a>' />
+  return <div ref={shellRef} className="map-shell"><Map ref={mapRef} initialViewState={{ longitude: 121.01, latitude: 14.5995, zoom: 11 }} mapStyle={MAP_STYLE} attributionControl={false} onLoad={collapseAttribution} aria-label={cityArea ? `Map of rentals in ${cityArea.properties.name}, with the city boundary outlined` : "Map of Metro Manila rentals"}>
+    <AttributionControl compact customAttribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/attributions">CARTO</a> · Boundaries: <a href="https://ulap-nga.georisk.gov.ph/arcgis/rest/services/PSA/MunicipalPopMF/MapServer/2">GeoRisk PH</a>' />
     <NavigationControl position="top-right" showCompass={false} />
-    {cityArea && <Source id="focused-city" type="geojson" data={cityArea}><Layer id="focused-city-fill" type="fill" paint={{ "fill-color": "#9ab69a", "fill-opacity": .2 }} /><Layer id="focused-city-halo" type="line" paint={{ "line-color": "#fffdf8", "line-width": 7, "line-opacity": .92, "line-blur": .4 }} /><Layer id="focused-city-outline" type="line" paint={{ "line-color": "#173f35", "line-width": 3.5, "line-opacity": 1 }} /></Source>}
     {listings.map((listing) => <Marker key={listing.id} className={selectedId === listing.id ? "selected-price-marker" : ""} latitude={listing.latitude} longitude={listing.longitude} anchor="center" onClick={(event) => { event.originalEvent.stopPropagation(); onSelect?.(listing); }}><button type="button" className={`price-marker ${selectedId === listing.id ? "selected" : ""}`} aria-label={`${listing.title}, ${compactPeso(listing.monthlyRent)} monthly`}>{compactPeso(listing.monthlyRent)}</button></Marker>)}
   </Map></div>;
 }

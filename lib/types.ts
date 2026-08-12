@@ -77,3 +77,54 @@ export interface Reservation {
   createdAt: string;
 }
 export interface HostInterest { name: string; email: string; phone: string; city: MetroCity; propertyType: RentalType; }
+
+export type ChatThreadKind = "assistant" | "owner";
+export type ChatMessageSender = "user" | "assistant" | "owner" | "system";
+export type ChatMessageStatus = "sending" | "sent";
+export type ChatActionKind = "search" | "summary" | "reservation" | "owner-message";
+
+export interface ChatParticipant {
+  id: string;
+  name: string;
+  avatar: string;
+  kind: ChatThreadKind;
+  verified?: boolean;
+  subtitle?: string;
+}
+
+export interface ChatContext {
+  route?: string;
+  search?: string;
+  listingId?: string;
+}
+
+export interface ChatActionCard {
+  id: string;
+  kind: ChatActionKind;
+  title: string;
+  body: string;
+  label?: string;
+  href?: string;
+  listingId?: string;
+  messageDraft?: string;
+  confirmed?: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: ChatMessageSender;
+  body: string;
+  createdAt: string;
+  status: ChatMessageStatus;
+  action?: ChatActionCard;
+}
+
+export interface ChatThread {
+  id: string;
+  kind: ChatThreadKind;
+  participant: ChatParticipant;
+  context: ChatContext;
+  messages: ChatMessage[];
+  updatedAt: string;
+  unreadCount: number;
+}

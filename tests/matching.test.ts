@@ -22,6 +22,12 @@ describe("Metro Manila rental catalog", () => {
     expect(result.length).toBeGreaterThan(0);
     expect(result.every((listing) => listing.city === "Makati" && listing.monthlyRent <= 40_000 && listing.capacity >= 2)).toBe(true);
   });
+
+  it("treats an exact city selection as a city boundary, not a nearby-name match", () => {
+    const result = filterRentals(listings, { ...DEFAULT_SEARCH, destination: "Manila" }, DEFAULT_FILTERS);
+    expect(result).toHaveLength(12);
+    expect(result.every((listing) => listing.city === "Manila")).toBe(true);
+  });
   it("round-trips shareable search parameters", () => {
     const search = { ...DEFAULT_SEARCH, destination: "Taft", moveIn: "2026-10-01", leaseMonths: 6, adults: 2, pets: 1 };
     expect(paramsToSearch(searchToParams(search))).toEqual(search);

@@ -39,6 +39,38 @@ test("property page supports gallery, amenities, reviews, and reserve", async ({
   await expect(page.getByRole("heading", { name: /confirm and reserve/i })).toBeVisible();
 });
 
+test("property host chat reuses its thread and persists messages", async ({ page }) => {
+  await page.goto("/properties/katipunan-condo-001");
+  await page.getByRole("complementary").getByRole("button", { name: "Message host" }).click();
+  const chat = page.getByRole("dialog", { name: "Maya Santos" });
+  await expect(chat).toBeVisible();
+  await chat.getByRole("button", { name: "Is this still available?" }).click();
+  await expect(chat.getByText(/still available for the listed move-in date/i)).toBeVisible();
+  await chat.getByRole("button", { name: "Collapse chat" }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "Open profile menu" }).click();
+  await page.getByRole("button", { name: "Messages" }).click();
+  await page.getByRole("dialog", { name: "Messages" }).getByRole("button", { name: /Maya Santos/i }).click();
+  await expect(page.getByRole("dialog").getByText(/still available for the listed move-in date/i)).toBeVisible();
+  const storedOwnerThreads = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("kubo-messages-v1") || "{}");
+    return state.threads.filter((thread: { kind: string }) => thread.kind === "owner").length;
+  });
+  expect(storedOwnerThreads).toBe(1);
+});
+
+test("Kubo assistant summarizes a property and confirms reservation actions", async ({ page }) => {
+  await page.goto("/properties/katipunan-condo-001");
+  await page.getByRole("button", { name: "Ask Kubo" }).click();
+  const chat = page.getByRole("dialog", { name: "Kubo assistant" });
+  await chat.getByRole("button", { name: "Summarize this property" }).click();
+  await expect(chat.getByText(/clearest summary/i)).toBeVisible();
+  await chat.getByRole("button", { name: "Help me reserve" }).click();
+  await expect(chat.getByRole("button", { name: "Review reservation" })).toBeVisible();
+  await chat.getByRole("button", { name: "Review reservation" }).click();
+  await expect(chat.getByRole("link", { name: "Continue to checkout" })).toBeVisible();
+});
+
 test("reservation is stored and appears as a confirmed trip", async ({ page }) => {
   await page.goto("/reserve/katipunan-condo-001?moveIn=2026-10-01&lease=12&adults=1&children=0&pets=0");
   await page.getByRole("button", { name: /confirm and pay/i }).click();

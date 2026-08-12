@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { Building2, Globe2, Heart, HelpCircle, Menu, Plane, UserRound } from "lucide-react";
+import { Building2, Globe2, Heart, HelpCircle, Menu, MessageCircle, Plane, UserRound } from "lucide-react";
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import { useState } from "react";
 import { useApp } from "@/app/app-provider";
@@ -14,6 +14,7 @@ import { ResultsSkeleton } from "@/components/results-skeleton";
 import { metroCities } from "@/lib/listings";
 import type { MetroCity, RentalType } from "@/lib/types";
 import { paramsToSearch } from "@/lib/search";
+import { useChat } from "@/app/chat-provider";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ export function SiteHeader() {
   const hasMarketSearch = onResultsPage || onPropertyPage;
   const resultsSearch = paramsToSearch(new URLSearchParams(searchParams.toString()));
   const { addHostInterest, showToast, resultsLoading } = useApp();
+  const { openInbox, totalUnread } = useChat();
   const [menu, setMenu] = useState(false);
   const [searchCollapsed, setSearchCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -43,7 +45,7 @@ export function SiteHeader() {
       {hasMarketSearch && <div className="site-results-search"><SearchBar compact initial={resultsSearch} /></div>}
       <div className="header-actions"><button type="button" className="host-link" onClick={() => setHostOpen(true)}>Become a host</button><button type="button" className="round-button" aria-label="Language and currency"><Globe2 size={19} /></button><button type="button" className="profile-button" onClick={() => setMenu(!menu)} aria-expanded={menu} aria-label="Open profile menu"><Menu size={19} /><UserRound size={24} /></button></div>
       {menu && <div className="profile-menu" role="menu">
-        <Link href="/wishlists" onClick={() => setMenu(false)}><Heart size={18} />Wishlists</Link><Link href="/trips" onClick={() => setMenu(false)}><Plane size={18} />Trips</Link><Link href="/help" onClick={() => setMenu(false)}><HelpCircle size={18} />Help center</Link>
+        <button type="button" onClick={() => { setMenu(false); openInbox(); }}><MessageCircle size={18} /><span><b>Messages</b>{totalUnread > 0 && <small>{totalUnread} unread</small>}</span></button><Link href="/wishlists" onClick={() => setMenu(false)}><Heart size={18} />Wishlists</Link><Link href="/trips" onClick={() => setMenu(false)}><Plane size={18} />Trips</Link><Link href="/help" onClick={() => setMenu(false)}><HelpCircle size={18} />Help center</Link>
         <button type="button" onClick={() => { setMenu(false); setHostOpen(true); }}><Building2 size={18} /><span><b>Become a host</b><small>List your place with Kubo</small></span></button>
       </div>}
     </div></header>

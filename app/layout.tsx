@@ -6,6 +6,8 @@ import { AppProvider } from "./app-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { NewTabNavigation } from "@/components/new-tab-navigation";
+import { ChatProvider } from "./chat-provider";
+import { ChatDock } from "@/components/chat-dock";
 
 export const metadata: Metadata = {
   title: { default: "Kubo | Find your next home in Metro Manila", template: "%s | Kubo" },
@@ -17,5 +19,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#fffdf8" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><AppProvider><NewTabNavigation /><Suspense fallback={null}><SiteHeader /></Suspense><main id="main-content">{children}</main><SiteFooter /></AppProvider></body></html>;
+  return <html lang="en"><body><AppProvider><ChatProvider><NewTabNavigation /><Suspense fallback={null}><SiteHeader /></Suspense><main id="main-content">{children}</main><SiteFooter /><ChatDock /></ChatProvider></AppProvider></body></html>;
 }

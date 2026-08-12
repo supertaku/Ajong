@@ -5,10 +5,12 @@ export const DEFAULT_FILTERS: RentalFilters = { minPrice: 0, maxPrice: 100000, t
 
 export function filterRentals(source: RentalListing[], search: SearchState, filters: RentalFilters) {
   const needle = search.destination.trim().toLowerCase();
+  const exactCitySearch = source.some((listing) => listing.city.toLowerCase() === needle);
   const occupants = search.adults + search.children;
   return source.filter((listing) => {
     const place = `${listing.city} ${listing.neighborhood} ${listing.title} ${listing.nearby.map((item) => item.name).join(" ")}`.toLowerCase();
-    return (!needle || needle === "metro manila" || place.includes(needle))
+    const matchesPlace = !needle || needle === "metro manila" || (exactCitySearch ? listing.city.toLowerCase() === needle : place.includes(needle));
+    return matchesPlace
       && listing.minimumLeaseMonths <= search.leaseMonths
       && listing.capacity >= occupants
       && listing.monthlyRent >= filters.minPrice

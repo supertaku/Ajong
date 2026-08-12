@@ -16,4 +16,11 @@ No source code or media from the following research repositories is copied into 
 - Current use: future architecture research only; no code, model artifact, or output incorporated
 - Future requirement: retain the license and NOTICE obligations, document modifications, and keep the GPU worker isolated from the browser product
 
-Map prototypes use React Leaflet with OpenStreetMap tile attribution shown directly on the map. Production use must comply with the chosen map and tile provider’s terms and operational requirements.
+## Metro Manila administrative boundaries
+
+- Source: GeoRisk Philippines / PSA Municipal Boundary layer
+- Service: <https://ulap-nga.georisk.gov.ph/arcgis/rest/services/PSA/MunicipalPopMF/MapServer/2>
+- Current use: the 17 Metro Manila city and municipality polygons are stored in `public/data/metro-manila-cities.json` and credited in the map attribution
+- Refresh workflow: run `bun run data:boundaries` to rebuild the local asset from the source layer
+
+Map tiles use OpenStreetMap data with CARTO styling. Their attribution is shown directly on the map. Production use must comply with the chosen map and tile provider's terms and operational requirements.

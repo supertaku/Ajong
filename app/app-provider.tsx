@@ -18,6 +18,8 @@ type AppContextValue = {
   addHostInterest: (interest: HostInterest) => void;
   toast: string;
   showToast: (message: string) => void;
+  resultsLoading: boolean;
+  showResultsLoading: () => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -26,6 +28,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState("");
+  const [resultsLoading, setResultsLoading] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -38,6 +41,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
+  }, []);
+  const showResultsLoading = useCallback(() => {
+    setResultsLoading(true);
+    window.setTimeout(() => setResultsLoading(false), 720);
   }, []);
   const isSaved = useCallback((listingId: string) => state.wishlists.some((list) => list.listingIds.includes(listingId)), [state.wishlists]);
   const toggleSaved = useCallback((listingId: string, wishlistName = "My favorite rentals") => {
@@ -55,7 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addReservation = useCallback((reservation: Reservation) => setState((current) => ({ ...current, reservations: [reservation, ...current.reservations] })), []);
   const addRecentSearch = useCallback((search: string) => setState((current) => ({ ...current, recentSearches: [search, ...current.recentSearches.filter((item) => item !== search)].slice(0, 6) })), []);
   const addHostInterest = useCallback((interest: HostInterest) => setState((current) => ({ ...current, hostInterests: [...current.hostInterests, interest] })), []);
-  const value = useMemo(() => ({ state, wishlists: state.wishlists, reservations: state.reservations, isSaved, toggleSaved, createWishlist, renameWishlist, removeWishlist, addReservation, addRecentSearch, addHostInterest, toast, showToast }), [state, isSaved, toggleSaved, createWishlist, renameWishlist, removeWishlist, addReservation, addRecentSearch, addHostInterest, toast, showToast]);
+  const value = useMemo(() => ({ state, wishlists: state.wishlists, reservations: state.reservations, isSaved, toggleSaved, createWishlist, renameWishlist, removeWishlist, addReservation, addRecentSearch, addHostInterest, toast, showToast, resultsLoading, showResultsLoading }), [state, isSaved, toggleSaved, createWishlist, renameWishlist, removeWishlist, addReservation, addRecentSearch, addHostInterest, toast, showToast, resultsLoading, showResultsLoading]);
   return <AppContext.Provider value={value}>{children}{toast && <div className="toast" role="status">{toast}</div>}</AppContext.Provider>;
 }
 

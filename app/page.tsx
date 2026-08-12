@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { PropertyCard } from "@/components/property-card";
-import { SearchBar } from "@/components/search-bar";
-import { listings, metroCities } from "@/lib/listings";
+import { HomeCollection } from "@/components/home-collection";
+import { listings } from "@/lib/listings";
 
 const collections = [
   { title: "Near top universities", body: "Shorter commutes around Taft, España, Katipunan, and Diliman.", items: listings.filter((item) => item.nearby.some((place) => place.kind === "university")).slice(0, 8) },
@@ -13,8 +11,7 @@ const collections = [
 
 export default function HomePage() {
   return <>
-    <section className="hero"><div className="container"><SearchBar /></div></section>
-    <section className="city-strip"><div className="container"><div className="city-chips">{metroCities.map((city) => <Link className="chip" key={city} href={`/properties?where=${encodeURIComponent(city)}`}>{city}</Link>)}</div></div></section>
-    {collections.map((collection, sectionIndex) => <section className="page-section" key={collection.title}><div className="container"><div className="section-heading"><div><h2>{collection.title}</h2><p>{collection.body}</p></div><Link href="/properties">Show all</Link></div><div className="rental-row">{collection.items.map((listing, index) => <PropertyCard key={listing.id} listing={listing} priority={sectionIndex === 0 && index < 4} />)}</div></div></section>)}
+    <section className="hero" aria-hidden="true"><div className="home-search-space" /></section>
+    {collections.map((collection, sectionIndex) => <HomeCollection key={collection.title} {...collection} priority={sectionIndex === 0} />)}
   </>;
 }

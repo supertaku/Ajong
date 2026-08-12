@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { AppProvider } from "./app-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { NewTabNavigation } from "@/components/new-tab-navigation";
 
 export const metadata: Metadata = {
   title: { default: "Kubo | Find your next home in Metro Manila", template: "%s | Kubo" },
@@ -15,5 +16,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#fffdf8" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><AppProvider><SiteHeader /><main id="main-content">{children}</main><SiteFooter /></AppProvider></body></html>;
+  return <html lang="en"><body><AppProvider><NewTabNavigation /><SiteHeader /><main id="main-content">{children}</main><SiteFooter /></AppProvider></body></html>;
 }

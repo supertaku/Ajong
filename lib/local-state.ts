@@ -1,46 +1,20 @@
-import type { GuideAnswers, Language, ModerationDecision, SellerSubmission, Theme } from "./types";
+import type { HostInterest, Reservation, Wishlist } from "./types";
 
-export const PROTOTYPE_STORAGE_KEY = "kubo-concept-state-v1";
-export const PROTOTYPE_STORAGE_VERSION = 2;
+export const STORAGE_KEY = "kubo-rentals-v1";
+export interface AppState { version: 1; wishlists: Wishlist[]; reservations: Reservation[]; recentSearches: string[]; hostInterests: HostInterest[]; }
+export const DEFAULT_STATE: AppState = { version: 1, wishlists: [], reservations: [], recentSearches: [], hostInterests: [] };
 
-export type PrototypeState = {
-  version: 2;
-  language: Language;
-  theme: Theme;
-  favorites: string[];
-  compare: string[];
-  guideAnswers?: GuideAnswers;
-  sellerSubmission?: SellerSubmission;
-  moderation?: ModerationDecision;
-};
-
-type LegacyState = Partial<Omit<PrototypeState, "version" | "favorites">> & {
-  version?: 0 | 1 | 2;
-  favorites?: unknown;
-  savedHomes?: unknown;
-};
-
-export function migratePrototypeState(serialized: string): PrototypeState | null {
+export function parseAppState(serialized: string | null): AppState {
+  if (!serialized) return DEFAULT_STATE;
   try {
-    const parsed = JSON.parse(serialized) as LegacyState;
-    if (!parsed || typeof parsed !== "object" || (parsed.version !== undefined && parsed.version !== 0 && parsed.version !== 1 && parsed.version !== 2)) return null;
-    const language: Language = parsed.language === "fil" ? "fil" : "en";
-    const theme: Theme = parsed.theme === "dark" ? "dark" : "light";
-    const favorites = stringArray(parsed.favorites) ?? stringArray(parsed.savedHomes) ?? [];
-    const compare = (stringArray(parsed.compare) ?? []).slice(0, 3);
+    const value = JSON.parse(serialized) as Partial<AppState>;
+    if (value.version !== 1) return DEFAULT_STATE;
     return {
-      version: PROTOTYPE_STORAGE_VERSION,
-      language,
-      theme,
-      favorites,
-      compare,
-      guideAnswers: parsed.guideAnswers,
-      sellerSubmission: parsed.sellerSubmission,
-      moderation: parsed.moderation,
+      version: 1,
+      wishlists: Array.isArray(value.wishlists) ? value.wishlists : [],
+      reservations: Array.isArray(value.reservations) ? value.reservations : [],
+      recentSearches: Array.isArray(value.recentSearches) ? value.recentSearches.filter((item): item is string => typeof item === "string").slice(0, 6) : [],
+      hostInterests: Array.isArray(value.hostInterests) ? value.hostInterests : [],
     };
-  } catch {
-    return null;
-  }
+  } catch { return DEFAULT_STATE; }
 }
-
-const stringArray = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;

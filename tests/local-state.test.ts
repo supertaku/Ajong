@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { migratePrototypeState } from "@/lib/local-state";
+import { DEFAULT_STATE, parseAppState } from "@/lib/local-state";
 
-describe("local-state migrations", () => {
-  it("migrates legacy savedHomes and caps comparisons at three", () => {
-    const migrated = migratePrototypeState(JSON.stringify({ version: 0, language: "fil", savedHomes: ["a"], compare: ["a", "b", "c", "d"] }));
-    expect(migrated).toMatchObject({ version: 2, language: "fil", theme: "light", favorites: ["a"], compare: ["a", "b", "c"] });
+describe("local rental state", () => {
+  it("loads valid state and limits recent searches", () => {
+    const state = parseAppState(JSON.stringify({ version: 1, wishlists: [], reservations: [], hostInterests: [], recentSearches: ["Makati", "BGC", "Pasig", "Taft", "Cubao", "Alabang", "Manila"] }));
+    expect(state.recentSearches).toHaveLength(6);
   });
-
-  it("rejects corrupt or unknown future state", () => {
-    expect(migratePrototypeState("not-json")).toBeNull();
-    expect(migratePrototypeState(JSON.stringify({ version: 8 }))).toBeNull();
+  it("recovers from corrupt and future state", () => {
+    expect(parseAppState("broken")).toEqual(DEFAULT_STATE);
+    expect(parseAppState(JSON.stringify({ version: 8 }))).toEqual(DEFAULT_STATE);
   });
 });

@@ -1,49 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { listings } from "@/lib/listings";
-import { DEFAULT_GUIDE_ANSWERS, filterListingsForGuide, getFilterImpacts, getRelaxationSuggestions, rankListings, scoreListing } from "@/lib/matching";
+import { DEFAULT_FILTERS, DEFAULT_SEARCH, filterRentals, paramsToSearch, searchToParams } from "@/lib/search";
 
-describe("deterministic inventory and guide matching", () => {
-  it("contains 48 uniquely identified fictional homes", () => {
-    expect(listings).toHaveLength(48);
-    expect(new Set(listings.map((listing) => listing.id)).size).toBe(48);
-    expect(listings.every((listing) => listing.demo)).toBe(true);
+describe("Metro Manila rental catalog", () => {
+  it("contains exactly 100 complete unique rentals", () => {
+    expect(listings).toHaveLength(100);
+    expect(new Set(listings.map((listing) => listing.id)).size).toBe(100);
+    expect(new Set(listings.map((listing) => listing.slug)).size).toBe(100);
+    expect(listings.every((listing) => listing.gallery.length === 5 && listing.amenities.length >= 8 && listing.reviews.length >= 3)).toBe(true);
   });
-
-  it("never increases counts while applying hard filters", () => {
-    const impacts = getFilterImpacts(listings, DEFAULT_GUIDE_ANSWERS, 6);
-    for (const impact of impacts.slice(0, 4)) expect(impact.after).toBeLessThanOrEqual(impact.before);
-    expect(impacts.slice(4).every((impact) => impact.rankingOnly && impact.after === impact.before)).toBe(true);
+  it("matches the requested city allocation", () => {
+    const counts = Object.fromEntries(Array.from(new Set(listings.map((listing) => listing.city))).map((city) => [city, listings.filter((listing) => listing.city === city).length]));
+    expect(counts).toMatchObject({ "Quezon City": 14, Manila: 12, Makati: 9, Taguig: 9, Pasig: 8, Mandaluyong: 7, Pasay: 7, Parañaque: 6, Muntinlupa: 5, Caloocan: 4, "Las Piñas": 4, Marikina: 4, "San Juan": 3, Valenzuela: 3, Malabon: 2, Navotas: 2, Pateros: 1 });
   });
-
-  it("supports undo by removing only the last applied guide step", () => {
-    const strict = { ...DEFAULT_GUIDE_ANSWERS, minBedrooms: 4, propertyTypes: ["house" as const] };
-    const throughBedrooms = filterListingsForGuide(listings, strict, 3);
-    const throughTypes = filterListingsForGuide(listings, strict, 4);
-    expect(throughBedrooms.length).toBeGreaterThanOrEqual(throughTypes.length);
-    expect(filterListingsForGuide(listings, strict, 3)).toEqual(throughBedrooms);
+  it("matches the requested property mix", () => {
+    const count = (type: (typeof listings)[number]["type"]) => listings.filter((listing) => listing.type === type).length;
+    expect({ condo: count("condo"), apartment: count("apartment"), studio: count("studio"), house: count("house"), dorm: count("dorm"), bedspace: count("bedspace"), privateRoom: count("private-room") }).toEqual({ condo: 26, apartment: 22, studio: 14, house: 10, dorm: 12, bedspace: 10, privateRoom: 6 });
   });
-
-  it("keeps every component inside its stated weight and totals them", () => {
-    const score = scoreListing(listings[0], DEFAULT_GUIDE_ANSWERS);
-    expect(score.location).toBeLessThanOrEqual(30);
-    expect(score.budget).toBeLessThanOrEqual(25);
-    expect(score.space).toBeLessThanOrEqual(15);
-    expect(score.timing).toBeLessThanOrEqual(10);
-    expect(score.parkingAccessibility).toBeLessThanOrEqual(10);
-    expect(score.priorities).toBeLessThanOrEqual(10);
-    expect(score.total).toBe(score.location + score.budget + score.space + score.timing + score.parkingAccessibility + score.priorities);
+  it("filters by destination, price, capacity, and amenities", () => {
+    const result = filterRentals(listings, { ...DEFAULT_SEARCH, destination: "Makati", adults: 2 }, { ...DEFAULT_FILTERS, maxPrice: 40_000, amenities: ["Wi-Fi"] });
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((listing) => listing.city === "Makati" && listing.monthlyRent <= 40_000 && listing.capacity >= 2)).toBe(true);
   });
-
-  it("uses score, then price, then id as stable tie breakers", () => {
-    const rankedA = rankListings(listings, DEFAULT_GUIDE_ANSWERS).map(({ listing }) => listing.id);
-    const rankedB = rankListings([...listings].reverse(), DEFAULT_GUIDE_ANSWERS).map(({ listing }) => listing.id);
-    expect(rankedA).toEqual(rankedB);
-  });
-
-  it("reports exact one-at-a-time recovery counts for a zero-result case", () => {
-    const impossible = { ...DEFAULT_GUIDE_ANSWERS, monthlyBudget: 10_000, cashAvailable: 0, minBedrooms: 5, areas: ["Bulacan" as const], propertyTypes: ["condo" as const] };
-    expect(filterListingsForGuide(listings, impossible)).toHaveLength(0);
-    const suggestions = getRelaxationSuggestions(listings, impossible);
-    for (const suggestion of suggestions) expect(suggestion.count).toBe(filterListingsForGuide(listings, suggestion.answers).length);
+  it("round-trips shareable search parameters", () => {
+    const search = { ...DEFAULT_SEARCH, destination: "Taft", moveIn: "2026-10-01", leaseMonths: 6, adults: 2, pets: 1 };
+    expect(paramsToSearch(searchToParams(search))).toEqual(search);
   });
 });

@@ -6,36 +6,14 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
-  title: { default: "Kubo · A home that fits your family", template: "%s · Kubo" },
-  description: "A bilingual, transparent home search experience for families in Greater Manila.",
-  openGraph: {
-    title: "Kubo · A home that fits your family",
-    description: "Clear, family-first home search across Greater Manila.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Kubo private real-estate concept for families" }],
-  },
+  title: { default: "Kubo | Find your next home in Metro Manila", template: "%s | Kubo" },
+  description: "Long-term homes, condos, apartments, dorms, and bedspaces across Metro Manila.",
+  openGraph: { title: "Kubo | Metro Manila rentals", description: "Find a place that fits your life.", images: [{ url: "/og.png", width: 1200, height: 630, alt: "Kubo Metro Manila rental marketplace" }] },
   twitter: { card: "summary_large_image", images: ["/og.png"] },
-  icons: {
-    icon: "/images/kubo-mascot.png",
-    shortcut: "/images/kubo-mascot.png",
-  },
+  icons: { icon: "/images/kubo-mascot.png", shortcut: "/images/kubo-mascot.png" },
 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#fffdf8" };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#f7f2e8" };
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
-        <AppProvider>
-          <SiteHeader />
-          <main id="main-content">{children}</main>
-          <SiteFooter />
-        </AppProvider>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en"><body><AppProvider><SiteHeader /><main id="main-content">{children}</main><SiteFooter /></AppProvider></body></html>;
 }

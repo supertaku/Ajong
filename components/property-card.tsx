@@ -2,35 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bath, BedDouble, Heart, Ruler, Scale, SquareParking } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Star } from "lucide-react";
+import { useState } from "react";
 import { useApp } from "@/app/app-provider";
-import { compactPeso } from "@/lib/finance";
-import type { Listing } from "@/lib/types";
+import { Modal } from "@/components/modal";
+import { peso } from "@/lib/finance";
+import { listingTypeLabels } from "@/lib/listings";
+import type { RentalListing } from "@/lib/types";
 
-export function PropertyCard({ listing, score, priority = false }: { listing: Listing; score?: number; priority?: boolean }) {
-  const { favorites, toggleFavorite, compare, toggleCompare, t } = useApp();
-  const saved = favorites.includes(listing.id);
-  const compared = compare.includes(listing.id);
-  return (
-    <article className="property-card">
-      <div className="property-image-wrap">
-        <Image src={listing.image} alt={`Illustrated fictional ${listing.propertyType} in ${listing.city}`} fill sizes="(max-width: 700px) 92vw, (max-width: 1100px) 45vw, 360px" className="property-image" priority={priority} unoptimized />
-        <span className="demo-pill">{t("listing.demo")}</span>
-        {score !== undefined && <span className="fit-pill"><strong>{score}</strong>/100 {t("listing.score")}</span>}
-        <button type="button" className={`icon-action ${saved ? "active" : ""}`} onClick={() => toggleFavorite(listing.id)} aria-label={saved ? `Remove ${listing.title} from saved homes` : `Save ${listing.title}`} aria-pressed={saved}><Heart size={19} fill={saved ? "currentColor" : "none"} /></button>
-      </div>
-      <div className="property-card-body">
-        <div className="property-location">{listing.city} · {listing.areaGroup}</div>
-        <h3>{listing.title}</h3>
-        <div className="property-price">{compactPeso(listing.price)}</div>
-        <div className="property-specs" aria-label="Property details">
-          <span><BedDouble size={16} />{listing.bedrooms}</span><span><Bath size={16} />{listing.bathrooms}</span><span><Ruler size={16} />{listing.floorArea} sqm</span><span><SquareParking size={16} />{listing.parking}</span>
-        </div>
-        <div className="property-card-actions">
-          <Link className="text-link" href={`/properties/${listing.id}`}>{t("listing.view")} <span aria-hidden>→</span></Link>
-          <button type="button" className={`compare-button ${compared ? "active" : ""}`} onClick={() => toggleCompare(listing.id)} disabled={!compared && compare.length >= 3}><Scale size={16} />{t("listing.compare")}</button>
-        </div>
-      </div>
-    </article>
-  );
+export function PropertyCard({ listing, priority = false, onHover }: { listing: RentalListing; priority?: boolean; onHover?: (id: string | null) => void }) {
+  const { isSaved, toggleSaved, wishlists, createWishlist, showToast } = useApp();
+  const [imageIndex, setImageIndex] = useState(0);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const saved = isSaved(listing.id);
+  const save = () => { toggleSaved(listing.id); showToast(saved ? "Removed from wishlists" : "Saved to your wishlist"); setWishlistOpen(false); };
+  return <article className="property-card" onMouseEnter={() => onHover?.(listing.id)} onMouseLeave={() => onHover?.(null)}>
+    <div className="property-photo"><Link href={`/properties/${listing.slug}`} aria-label={`View ${listing.title}`}><Image src={listing.gallery[imageIndex]} alt={`${listing.title}, photo ${imageIndex + 1}`} fill sizes="(max-width: 640px) 92vw, (max-width: 1100px) 45vw, 320px" priority={priority} unoptimized /></Link>
+      {listing.badge && <span className="listing-badge">{listing.badge}</span>}
+      <button type="button" className={`heart-button ${saved ? "saved" : ""}`} onClick={() => saved ? save() : setWishlistOpen(true)} aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}><Heart size={23} fill={saved ? "currentColor" : "rgba(24,49,43,.25)"} /></button>
+      {imageIndex > 0 && <button type="button" className="photo-arrow left" onClick={() => setImageIndex(imageIndex - 1)} aria-label="Previous photo"><ChevronLeft size={18} /></button>}
+      {imageIndex < listing.gallery.length - 1 && <button type="button" className="photo-arrow right" onClick={() => setImageIndex(imageIndex + 1)} aria-label="Next photo"><ChevronRight size={18} /></button>}
+      <div className="photo-dots" aria-hidden="true">{listing.gallery.map((_, index) => <span className={index === imageIndex ? "active" : ""} key={index} />)}</div>
+    </div>
+    <Link href={`/properties/${listing.slug}`} className="property-copy"><div className="property-topline"><strong>{listing.neighborhood}, {listing.city}</strong><span><Star size={14} fill="currentColor" />{listing.rating}</span></div><p>{listing.title}</p><small>{listingTypeLabels[listing.type]} · {listing.beds} bed{listing.beds === 1 ? "" : "s"} · {listing.bathrooms} bath</small><div className="property-price"><strong>{peso(listing.monthlyRent)}</strong> month</div></Link>
+    <Modal open={wishlistOpen} onClose={() => setWishlistOpen(false)} title="Save to wishlist" size="small"><div className="wishlist-picker">{wishlists.map((list) => <button key={list.id} type="button" onClick={() => { toggleSaved(listing.id, list.name); setWishlistOpen(false); showToast(`Saved to ${list.name}`); }}><span className="wishlist-thumb"><Image src={listing.gallery[0]} alt="" fill unoptimized /></span><span><strong>{list.name}</strong><small>{list.listingIds.length} saved</small></span></button>)}<label className="field-block"><span>Create a new wishlist</span><div className="inline-field"><input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Weekend shortlist" /><button type="button" className="button secondary" disabled={!newName.trim()} onClick={() => { createWishlist(newName.trim(), listing.id); setWishlistOpen(false); showToast(`Created ${newName.trim()}`); }}>Create</button></div></label>{wishlists.length === 0 && <button type="button" className="button primary wide" onClick={save}>Save to My favorite rentals</button>}</div></Modal>
+  </article>;
 }

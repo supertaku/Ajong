@@ -1,115 +1,79 @@
-import type { AreaGroup, Listing, MoveInTiming, Priority, PropertyType, SellerSubmission } from "./types";
+import type { GenderPolicy, MetroCity, RentalHost, RentalListing, RentalType } from "./types";
 
-type LocationSeed = {
-  city: string;
-  areaGroup: AreaGroup;
-  latitude: number;
-  longitude: number;
-  priceFactor: number;
-  commute: Listing["commuteMinutes"];
-};
-
-const locations: LocationSeed[] = [
-  { city: "Quezon City", areaGroup: "Metro Manila", latitude: 14.676, longitude: 121.0437, priceFactor: 1.08, commute: { Makati: 52, BGC: 58, Ortigas: 39, "Quezon City": 18, Alabang: 86 } },
-  { city: "Marikina", areaGroup: "Metro Manila", latitude: 14.6507, longitude: 121.1029, priceFactor: 0.96, commute: { Makati: 58, BGC: 54, Ortigas: 37, "Quezon City": 31, Alabang: 88 } },
-  { city: "Pasig", areaGroup: "Metro Manila", latitude: 14.5764, longitude: 121.0851, priceFactor: 1.15, commute: { Makati: 38, BGC: 31, Ortigas: 18, "Quezon City": 45, Alabang: 68 } },
-  { city: "Mandaluyong", areaGroup: "Metro Manila", latitude: 14.5794, longitude: 121.0359, priceFactor: 1.2, commute: { Makati: 27, BGC: 32, Ortigas: 16, "Quezon City": 41, Alabang: 61 } },
-  { city: "Parañaque", areaGroup: "Metro Manila", latitude: 14.4793, longitude: 121.0198, priceFactor: 1.06, commute: { Makati: 39, BGC: 38, Ortigas: 52, "Quezon City": 73, Alabang: 31 } },
-  { city: "Las Piñas", areaGroup: "Metro Manila", latitude: 14.4445, longitude: 120.9939, priceFactor: 0.98, commute: { Makati: 47, BGC: 49, Ortigas: 64, "Quezon City": 82, Alabang: 24 } },
-  { city: "Muntinlupa", areaGroup: "Metro Manila", latitude: 14.4081, longitude: 121.0415, priceFactor: 1.02, commute: { Makati: 50, BGC: 48, Ortigas: 68, "Quezon City": 88, Alabang: 15 } },
-  { city: "Caloocan", areaGroup: "Metro Manila", latitude: 14.7566, longitude: 121.045, priceFactor: 0.9, commute: { Makati: 68, BGC: 74, Ortigas: 55, "Quezon City": 29, Alabang: 101 } },
-  { city: "Antipolo", areaGroup: "Rizal", latitude: 14.5863, longitude: 121.1754, priceFactor: 0.82, commute: { Makati: 68, BGC: 63, Ortigas: 47, "Quezon City": 55, Alabang: 92 } },
-  { city: "Cainta", areaGroup: "Rizal", latitude: 14.5786, longitude: 121.1222, priceFactor: 0.86, commute: { Makati: 58, BGC: 52, Ortigas: 36, "Quezon City": 49, Alabang: 84 } },
-  { city: "Bacoor", areaGroup: "Cavite", latitude: 14.4129, longitude: 120.9737, priceFactor: 0.76, commute: { Makati: 64, BGC: 67, Ortigas: 82, "Quezon City": 98, Alabang: 36 } },
-  { city: "Imus", areaGroup: "Cavite", latitude: 14.4297, longitude: 120.9367, priceFactor: 0.7, commute: { Makati: 76, BGC: 79, Ortigas: 94, "Quezon City": 111, Alabang: 45 } },
-  { city: "Santa Rosa", areaGroup: "Laguna", latitude: 14.2843, longitude: 121.0889, priceFactor: 0.74, commute: { Makati: 79, BGC: 76, Ortigas: 94, "Quezon City": 113, Alabang: 43 } },
-  { city: "Biñan", areaGroup: "Laguna", latitude: 14.3427, longitude: 121.0807, priceFactor: 0.71, commute: { Makati: 71, BGC: 70, Ortigas: 88, "Quezon City": 106, Alabang: 35 } },
-  { city: "San Jose del Monte", areaGroup: "Bulacan", latitude: 14.8139, longitude: 121.0453, priceFactor: 0.62, commute: { Makati: 96, BGC: 103, Ortigas: 83, "Quezon City": 52, Alabang: 128 } },
-  { city: "Malolos", areaGroup: "Bulacan", latitude: 14.8527, longitude: 120.816, priceFactor: 0.66, commute: { Makati: 98, BGC: 106, Ortigas: 89, "Quezon City": 72, Alabang: 132 } },
+type CitySeed = { city: MetroCity; count: number; lat: number; lng: number; neighborhoods: string[]; anchors: string[]; factor: number };
+const citySeeds: CitySeed[] = [
+  { city: "Quezon City", count: 14, lat: 14.6507, lng: 121.0494, neighborhoods: ["Katipunan", "Diliman", "Cubao", "Eastwood", "Commonwealth", "Fairview"], anchors: ["UP Diliman", "Ateneo de Manila", "Araneta City"], factor: 1.05 },
+  { city: "Manila", count: 12, lat: 14.5995, lng: 120.9842, neighborhoods: ["Malate", "Sampaloc", "Ermita", "Taft", "Intramuros", "Tondo"], anchors: ["DLSU Manila", "University of Santo Tomas", "LRT Pedro Gil"], factor: 1 },
+  { city: "Makati", count: 9, lat: 14.5547, lng: 121.0244, neighborhoods: ["Poblacion", "Salcedo Village", "Legazpi Village", "Bel-Air", "Pio del Pilar"], anchors: ["Ayala Triangle", "Greenbelt", "MRT Ayala"], factor: 1.55 },
+  { city: "Taguig", count: 9, lat: 14.5176, lng: 121.0509, neighborhoods: ["BGC", "McKinley Hill", "Pembo", "Lower Bicutan"], anchors: ["Bonifacio High Street", "Market Market", "Venice Grand Canal"], factor: 1.45 },
+  { city: "Pasig", count: 8, lat: 14.5764, lng: 121.0851, neighborhoods: ["Ortigas Center", "Kapitolyo", "Caniogan", "Rosario"], anchors: ["Ortigas Center", "Estancia", "MRT Shaw"], factor: 1.2 },
+  { city: "Mandaluyong", count: 7, lat: 14.5794, lng: 121.0359, neighborhoods: ["Greenfield", "Highway Hills", "Wack-Wack", "Barangka"], anchors: ["Greenfield District", "MRT Shaw", "SM Megamall"], factor: 1.18 },
+  { city: "Pasay", count: 7, lat: 14.5378, lng: 120.9896, neighborhoods: ["MOA Complex", "Newport City", "Libertad", "Cartimar"], anchors: ["Mall of Asia", "NAIA Terminal 3", "LRT Gil Puyat"], factor: 1.2 },
+  { city: "Parañaque", count: 6, lat: 14.4793, lng: 121.0198, neighborhoods: ["Aseana City", "BF Homes", "Don Bosco", "Bicutan"], anchors: ["Ayala Malls Manila Bay", "NAIA Terminal 1", "SM Bicutan"], factor: 1.08 },
+  { city: "Muntinlupa", count: 5, lat: 14.4081, lng: 121.0415, neighborhoods: ["Alabang", "Filinvest City", "Cupang", "Sucat"], anchors: ["Festival Mall", "Alabang Town Center", "Asian Hospital"], factor: 1.12 },
+  { city: "Caloocan", count: 4, lat: 14.7566, lng: 121.045, neighborhoods: ["Monumento", "Grace Park", "Bagong Silang"], anchors: ["LRT Monumento", "University of Caloocan", "SM Grand Central"], factor: .78 },
+  { city: "Las Piñas", count: 4, lat: 14.4445, lng: 120.9939, neighborhoods: ["Pilar Village", "Almanza", "Pamplona"], anchors: ["SM Southmall", "University of Perpetual Help", "Alabang-Zapote Road"], factor: .92 },
+  { city: "Marikina", count: 4, lat: 14.6507, lng: 121.1029, neighborhoods: ["Marikina Heights", "Concepcion", "Sto. Niño"], anchors: ["Marikina Sports Center", "LRT Marikina-Pasig", "Riverbanks Center"], factor: .84 },
+  { city: "San Juan", count: 3, lat: 14.6019, lng: 121.0355, neighborhoods: ["Greenhills", "Little Baguio", "Balong-Bato"], anchors: ["Greenhills Mall", "Xavier School", "Santolan Town Plaza"], factor: 1.18 },
+  { city: "Valenzuela", count: 3, lat: 14.7011, lng: 120.983, neighborhoods: ["Karuhatan", "Malinta", "Marulas"], anchors: ["Valenzuela Gateway Complex", "Our Lady of Fatima University", "People's Park"], factor: .72 },
+  { city: "Malabon", count: 2, lat: 14.6681, lng: 120.9658, neighborhoods: ["Potrero", "Concepcion"], anchors: ["Malabon City Square", "DLSAU", "Monumento"], factor: .7 },
+  { city: "Navotas", count: 2, lat: 14.6732, lng: 120.935, neighborhoods: ["San Jose", "Tangos"], anchors: ["Navotas City Hall", "C-4 Road", "North Bay Boulevard"], factor: .68 },
+  { city: "Pateros", count: 1, lat: 14.544, lng: 121.0674, neighborhoods: ["San Roque"], anchors: ["Pateros Town Plaza", "BGC", "Pasig River Ferry"], factor: .82 },
 ];
 
-const typeSeeds: Record<PropertyType, { basePrice: number; image: string; label: string }> = {
-  condo: { basePrice: 5_400_000, image: "/images/property-condo.png", label: "Condo" },
-  townhouse: { basePrice: 6_600_000, image: "/images/property-townhouse.png", label: "Townhouse" },
-  house: { basePrice: 8_200_000, image: "/images/property-house.png", label: "House" },
-};
-
-const titles = {
-  condo: ["Garden-view", "Sunlit", "Family-ready"],
-  townhouse: ["Tree-lined", "Practical", "Warm modern"],
-  house: ["Leafy", "Roomy", "Quiet-corner"],
-};
-const moveIns: MoveInTiming[] = ["ready", "within-year", "pre-selling"];
-const prioritySets: Priority[][] = [
-  ["transit", "accessibility", "proximity"],
-  ["space", "parking", "quiet"],
-  ["space", "parking", "proximity"],
+const typeAllocation: RentalType[] = [
+  ...Array<RentalType>(26).fill("condo"), ...Array<RentalType>(22).fill("apartment"), ...Array<RentalType>(14).fill("studio"),
+  ...Array<RentalType>(10).fill("house"), ...Array<RentalType>(12).fill("dorm"), ...Array<RentalType>(10).fill("bedspace"), ...Array<RentalType>(6).fill("private-room"),
 ];
+const typeLabel: Record<RentalType, string> = { condo: "Condo", apartment: "Apartment", studio: "Studio", house: "Townhome", dorm: "Dorm room", bedspace: "Bedspace", "private-room": "Private room" };
+const baseRent: Record<RentalType, number> = { condo: 25000, apartment: 19000, studio: 15000, house: 36000, dorm: 10500, bedspace: 6500, "private-room": 9000 };
+const hostNames = ["Maya Santos", "Paolo Reyes", "Trina Villanueva", "Carlo Mendoza", "Aya Navarro", "Miguel Lim", "Bea Castillo", "Nico Garcia", "Samira Cruz", "Luis de Guzman"];
+const reviewAuthors = ["Andrea", "Joshua", "Bea", "Marco", "Lianne", "Paolo", "Mika", "Rafael"];
+const allAmenities = ["Wi-Fi", "Air conditioning", "Kitchen", "Washer", "Security", "Elevator", "Gym", "Pool", "Study area", "Backup power", "Hot shower", "CCTV"];
+const descriptors = ["Sunlit", "Quiet", "Fresh", "Corner", "City-view", "Relaxed", "Well-planned", "Airy"];
 
-export const listings: Listing[] = locations.flatMap((location, locationIndex) =>
-  (["condo", "townhouse", "house"] as PropertyType[]).map((propertyType, typeIndex) => {
-    const seed = typeSeeds[propertyType];
-    const variation = 1 + ((locationIndex + typeIndex) % 5) * 0.035;
-    const price = Math.round(seed.basePrice * location.priceFactor * variation / 50_000) * 50_000;
-    const bedrooms = propertyType === "condo" ? 1 + (locationIndex % 2) : propertyType === "townhouse" ? 3 : 3 + (locationIndex % 2);
-    const floorArea = propertyType === "condo" ? 42 + (locationIndex % 4) * 9 : propertyType === "townhouse" ? 78 + (locationIndex % 4) * 12 : 105 + (locationIndex % 5) * 17;
-    const role = locationIndex % 4 === 0 ? "owner" : locationIndex % 3 === 0 ? "accredited-salesperson" : "licensed-broker";
-    return {
-      id: `${location.city.toLowerCase().replaceAll(" ", "-").replaceAll("ñ", "n")}-${propertyType}`,
-      title: `${titles[propertyType][locationIndex % 3]} ${bedrooms}BR ${seed.label} in ${location.city}`,
-      city: location.city,
-      areaGroup: location.areaGroup,
-      propertyType,
-      price,
-      bedrooms,
-      bathrooms: Math.max(1, bedrooms - (propertyType === "condo" ? 1 : 0)),
-      floorArea,
-      lotArea: propertyType === "condo" ? undefined : propertyType === "townhouse" ? 55 + (locationIndex % 3) * 12 : 90 + (locationIndex % 4) * 25,
-      parking: propertyType === "condo" ? locationIndex % 2 : 1 + (propertyType === "house" && locationIndex % 4 === 0 ? 1 : 0),
-      latitude: location.latitude + (typeIndex - 1) * 0.004,
-      longitude: location.longitude + (typeIndex - 1) * 0.004,
-      image: seed.image,
-      moveIn: moveIns[(locationIndex + typeIndex) % moveIns.length],
-      priorities: prioritySets[typeIndex],
-      commuteMinutes: location.commute,
-      seller: {
-        id: `seller-${locationIndex}-${typeIndex}`,
-        name: role === "owner" ? `Property owner ${locationIndex + 1}` : `${role === "licensed-broker" ? "Listing broker" : "Salesperson"} ${locationIndex + 1}`,
-        role,
-        prcNumber: role === "owner" ? undefined : String(4100 + locationIndex * 3 + typeIndex).padStart(5, "0"),
-      },
-      verification: {
-        identity: "demo-checked",
-        authorityToSell: locationIndex % 5 === 0 ? "needs-review" : "demo-checked",
-        professionalCredential: role === "owner" ? "not-provided" : "demo-checked",
-        projectLicense: propertyType === "condo" && locationIndex % 4 !== 0 ? "demo-checked" : "not-provided",
-        note: "Confirm every document with the issuing office before making a payment or commitment.",
-      },
-      description: `A family-focused ${propertyType} in ${location.city} with clear price, space, timing, and daily-living details for comparison.`,
-      monthlyDues: propertyType === "condo" ? 3_500 + (locationIndex % 4) * 900 : propertyType === "townhouse" ? 1_200 : undefined,
-      tour: undefined,
-      demo: true,
-    } satisfies Listing;
-  }),
-);
+const hosts: RentalHost[] = hostNames.map((name, index) => ({ id: `host-${index + 1}`, name, avatar: `/images/hosts/host-${String(index + 1).padStart(2, "0")}.jpg`, verified: true, yearsHosting: 2 + (index % 7), responseRate: 93 + (index % 7), responseTime: index % 3 === 0 ? "within an hour" : "within a few hours" }));
+const seeded = (index: number, salt: number) => ((index * 9301 + salt * 49297 + 233280) % 233280) / 233280;
+const pad = (value: number) => String(value).padStart(3, "0");
 
-export const getListing = (id: string) => listings.find((listing) => listing.id === id);
+let globalIndex = 0;
+export const listings: RentalListing[] = citySeeds.flatMap((citySeed) => Array.from({ length: citySeed.count }, (_, cityIndex) => {
+  const index = globalIndex++;
+  const type = typeAllocation[index];
+  const neighborhood = citySeed.neighborhoods[cityIndex % citySeed.neighborhoods.length];
+  const building = `${["Amihan", "Luntian", "Sampaguita", "Habagat", "Narra", "Liwayway", "Tahanan"][index % 7]} ${type === "house" ? "Homes" : type === "dorm" || type === "bedspace" ? "Residences" : "Place"}`;
+  const monthlyRent = Math.round(baseRent[type] * citySeed.factor * (0.88 + seeded(index, 2) * .28) / 500) * 500;
+  const isShared = type === "dorm" || type === "bedspace" || type === "private-room";
+  const bedrooms = type === "studio" || type === "bedspace" ? 0 : type === "house" ? 2 + (index % 3) : 1 + (type === "apartment" && index % 4 === 0 ? 1 : 0);
+  const beds = type === "bedspace" ? 1 : type === "dorm" ? 1 + (index % 2) : Math.max(1, bedrooms);
+  const capacity = type === "bedspace" ? 1 : type === "dorm" ? 2 : Math.max(2, beds + (type === "house" ? 2 : 0));
+  const groupStart = Math.floor(index / 4) * 4;
+  const cover = `/images/rentals/rental-${pad(index + 1)}.jpg`;
+  const gallery = [cover, ...Array.from({ length: 4 }, (_, offset) => `/images/rentals/rental-${pad(Math.min(100, groupStart + offset + 1))}.jpg`)].filter((value, position, array) => array.indexOf(value) === position);
+  while (gallery.length < 5) gallery.push(`/images/rentals/building-${String(Math.floor(index / 4) + 1).padStart(2, "0")}.jpg`);
+  const genderPolicy: GenderPolicy = type === "dorm" || type === "bedspace" ? (index % 2 ? "women only" : "men only") : "any";
+  const amenities = allAmenities.filter((_, amenityIndex) => amenityIndex < 5 || seeded(index, amenityIndex) > .42).slice(0, 8 + index % 4);
+  const nearby = citySeed.anchors.map((name, anchorIndex) => ({ name, kind: anchorIndex === 0 ? (name.includes("University") || name.includes("DLS") || name.includes("Ateneo") || name.includes("UP ") ? "university" as const : "landmark" as const) : anchorIndex === 1 ? "business" as const : "transit" as const, minutes: 4 + Math.floor(seeded(index, anchorIndex + 20) * 16) }));
+  const rating = Number((4.62 + seeded(index, 44) * .34).toFixed(2));
+  const reviewCount = 7 + Math.floor(seeded(index, 51) * 112);
+  return {
+    id: `KUBO-${pad(index + 1)}`, slug: `${neighborhood.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${type}-${pad(index + 1)}`,
+    title: `${descriptors[index % descriptors.length]} ${typeLabel[type]} in ${neighborhood}`,
+    description: `${isShared ? "A comfortable, thoughtfully managed space" : "A well-kept long-term home"} in ${neighborhood}, close to daily essentials and major destinations. The layout makes everyday routines easy, with practical storage, reliable connectivity, and responsive local hosting.`,
+    type, city: citySeed.city, neighborhood, address: `${20 + index} ${building} Street, ${neighborhood}, ${citySeed.city}`,
+    latitude: Number((citySeed.lat + (seeded(index, 7) - .5) * .028).toFixed(6)), longitude: Number((citySeed.lng + (seeded(index, 8) - .5) * .028).toFixed(6)),
+    monthlyRent, associationDues: type === "condo" ? 2200 + (index % 5) * 450 : 0, utilitiesEstimate: 1800 + (index % 6) * 400,
+    depositMonths: 1, advanceMonths: 1, availableFrom: `2026-${String(9 + (index % 4)).padStart(2, "0")}-${String(1 + (index % 20)).padStart(2, "0")}`,
+    minimumLeaseMonths: ([3, 6, 12] as const)[index % 3], bedrooms, beds, bathrooms: type === "house" ? 2 : 1, floorArea: isShared ? 12 + (index % 8) : type === "house" ? 72 + (index % 7) * 8 : 24 + (index % 9) * 5,
+    capacity, furnishing: index % 5 === 0 ? "semi-furnished" : index % 7 === 0 ? "unfurnished" : "fully furnished", genderPolicy,
+    parking: !isShared && index % 3 !== 0, petsAllowed: !isShared && index % 4 === 0, accessible: type === "condo" && index % 3 !== 0,
+    amenities, houseRules: ["No smoking indoors", "Quiet hours after 10 PM", "Registered residents only", ...(type === "dorm" || type === "bedspace" ? ["Observe residence visitor hours"] : [])], gallery,
+    rating, reviewCount, reviews: [0, 1, 2].map((reviewIndex) => ({ id: `${pad(index + 1)}-${reviewIndex}`, author: reviewAuthors[(index + reviewIndex) % reviewAuthors.length], date: ["July 2026", "May 2026", "February 2026"][reviewIndex], rating: reviewIndex === 2 && index % 5 === 0 ? 4 : 5, text: ["The home matched the photos and the neighborhood was easy to settle into.", "Responsive host, reliable Wi-Fi, and a very practical location for work and errands.", "Move-in was organized and the space felt comfortable from the first week."][reviewIndex] })),
+    host: hosts[index % hosts.length], nearby, badge: index % 11 === 0 ? "New" : index % 5 === 0 ? "Great value" : index % 3 === 0 ? "Guest favorite" : undefined,
+  } satisfies RentalListing;
+}));
 
-export const sampleSellerSubmission: SellerSubmission = {
-  id: "SUB-1042",
-  sellerRole: "licensed-broker",
-  sellerName: "Maya Santos",
-  propertyType: "townhouse",
-  city: "Antipolo",
-  areaGroup: "Rizal",
-  price: 6_450_000,
-  bedrooms: 3,
-  bathrooms: 2,
-  floorArea: 92,
-  mediaFiles: ["front-exterior.jpg", "living-room.jpg"],
-  evidenceFiles: ["authority-to-sell.pdf", "title-copy.pdf"],
-  prcNumber: "04217",
-  dhsudNumber: "",
-  disclosuresAccepted: true,
-  submittedAt: "2026-07-18T04:00:00.000Z",
-};
+export const metroCities = citySeeds.map((seed) => seed.city);
+export const destinationSuggestions = citySeeds.flatMap((seed) => [seed.city, ...seed.neighborhoods, ...seed.anchors]).filter((value, index, values) => values.indexOf(value) === index);
+export const getListing = (idOrSlug: string) => listings.find((listing) => listing.id === idOrSlug || listing.slug === idOrSlug);
+export const listingTypeLabels = typeLabel;

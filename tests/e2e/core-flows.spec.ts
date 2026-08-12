@@ -26,13 +26,16 @@ test("results expose filters and the OpenStreetMap view", async ({ page }) => {
 
 test("property page supports gallery, amenities, reviews, and reserve", async ({ page }) => {
   await page.goto("/properties/katipunan-condo-001");
-  await page.getByRole("button", { name: /show all photos/i }).click();
-  await expect(page.getByRole("dialog", { name: "Photo tour" })).toBeVisible();
-  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: /open photo 3/i }).click();
+  await expect(page).toHaveURL(/\/properties\/katipunan-condo-001\/photos#photo-3$/);
+  await expect(page.context().pages()).toHaveLength(1);
+  await expect(page.getByRole("heading", { name: "Photo tour" })).toBeVisible();
+  await page.getByRole("button", { name: /back to property/i }).click();
+  await expect(page).toHaveURL(/\/properties\/katipunan-condo-001$/);
   await page.getByRole("button", { name: /show all .* amenities/i }).click();
   await expect(page.getByRole("dialog", { name: /what this place offers/i })).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
-  await page.getByRole("link", { name: "Reserve" }).click();
+  await page.getByRole("complementary").getByRole("link", { name: "Reserve" }).click();
   await expect(page.getByRole("heading", { name: /confirm and reserve/i })).toBeVisible();
 });
 

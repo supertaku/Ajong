@@ -441,3 +441,48 @@
 @media(max-width:860px){.skeleton-filter-row{justify-content:flex-start;padding-inline:16px}.skeleton-map{display:none}.skeleton-property-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.skeleton-property-grid{grid-template-columns:1fr}.skeleton-pill:nth-child(n+5){display:none}}
 @media(prefers-reduced-motion:reduce){.skeleton-block:after{animation:none;display:none}}
+
+/* Dedicated, same-tab photo tour inspired by Airbnb's photography-first page. */
+.photo-tour-page{min-height:100dvh;background:#fff;color:#252525}
+.photo-tour-header{position:sticky;z-index:30;top:0;height:80px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(255,255,255,.97);border-bottom:1px solid transparent}
+.photo-tour-icon-button{width:42px;height:42px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#252525;transition:background .16s ease,transform .12s ease}
+.photo-tour-icon-button:hover{background:#f1f1f1}.photo-tour-icon-button:active{transform:scale(.95)}
+.photo-tour-actions{display:flex;align-items:center;gap:20px}
+.photo-tour-actions button{min-height:42px;display:flex;align-items:center;gap:8px;padding:0 6px;border:0;background:transparent;color:#252525;font:inherit;font-size:.92rem;font-weight:650;text-decoration:underline;text-underline-offset:2px;transition:color .16s ease,transform .12s ease}
+.photo-tour-actions button:hover{color:#595959}.photo-tour-actions button:active{transform:scale(.97)}
+.photo-tour-content{width:min(1440px,calc(100% - 96px));margin:0 auto;padding:10px 0 96px}
+.photo-tour-content>h1{margin:0 0 36px;font-size:1.9rem;line-height:1.2;font-weight:650;letter-spacing:-.035em}
+.photo-tour-index{display:flex;gap:18px;margin-bottom:62px;overflow-x:auto;scrollbar-width:none}
+.photo-tour-index::-webkit-scrollbar{display:none}
+.photo-tour-index>a{flex:0 0 190px;display:grid;gap:10px;color:#252525;text-decoration:none}
+.photo-tour-index-image{position:relative;width:100%;aspect-ratio:1.52;overflow:hidden;background:#f1f1f1}
+.photo-tour-index-image img{object-fit:cover;transition:filter .18s ease,transform .24s ease}
+.photo-tour-index>a:hover img{filter:brightness(.92);transform:scale(1.015)}
+.photo-tour-index strong{font-size:.92rem;font-weight:500}
+.photo-tour-groups{display:grid;gap:72px}
+.photo-tour-group{display:grid;grid-template-columns:minmax(220px,340px) minmax(0,1fr);gap:44px;scroll-margin-top:104px}
+.photo-tour-group>h2{position:sticky;top:104px;align-self:start;margin:0;font-size:1.75rem;line-height:1.2;font-weight:600;letter-spacing:-.035em}
+.photo-tour-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.photo-tour-grid figure{position:relative;min-width:0;aspect-ratio:1.42;margin:0;overflow:hidden;background:#f1f1f1;scroll-margin-top:96px}
+.photo-tour-grid figure img{object-fit:cover}
+.photo-tour-grid-1{grid-template-columns:1fr}.photo-tour-grid-1 figure{aspect-ratio:1.72}
+.photo-tour-grid-2 figure:first-child{aspect-ratio:1.05;grid-row:span 2}.photo-tour-grid-2 figure:last-child{aspect-ratio:1.05;align-self:end}
+
+@media(max-width:980px){
+  .photo-tour-content{width:calc(100% - 64px)}
+  .photo-tour-group{grid-template-columns:220px minmax(0,1fr);gap:28px}
+  .photo-tour-grid{grid-template-columns:1fr}.photo-tour-grid-2 figure:first-child,.photo-tour-grid-2 figure:last-child{grid-row:auto;aspect-ratio:1.42}
+}
+@media(max-width:700px){
+  .photo-tour-header{height:64px;padding:0 14px}
+  .photo-tour-actions{gap:10px}.photo-tour-actions button{width:42px;justify-content:center;padding:0}.photo-tour-actions button span{display:none}
+  .photo-tour-content{width:100%;padding:16px 0 76px}
+  .photo-tour-content>h1{padding:0 20px;margin-bottom:24px;font-size:1.65rem}
+  .photo-tour-index{gap:12px;padding:0 20px;margin-bottom:42px}
+  .photo-tour-index>a{flex-basis:148px}.photo-tour-index strong{font-size:.86rem}
+  .photo-tour-groups{gap:48px}
+  .photo-tour-group{display:block;scroll-margin-top:80px}
+  .photo-tour-group>h2{position:static;padding:0 20px;margin:0 0 18px;font-size:1.35rem}
+  .photo-tour-grid{display:block}
+  .photo-tour-grid figure,.photo-tour-grid-1 figure,.photo-tour-grid-2 figure:first-child,.photo-tour-grid-2 figure:last-child{width:100%;aspect-ratio:1.28;margin-bottom:8px;scroll-margin-top:72px}
+}

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Building2, Check, Copy, Flag, Grid3X3, Heart, KeyRound, Mail, MapPin, MessageCircle, Share2, ShieldCheck, Star, Wifi } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/app/app-provider";
@@ -13,7 +14,7 @@ import { listingTypeLabels } from "@/lib/listings";
 import type { RentalListing } from "@/lib/types";
 
 const PropertyMap = dynamic(() => import("@/components/property-map").then((module) => module.PropertyMap), { ssr: false, loading: () => <div className="map-shell" /> });
-type DetailModal = "gallery" | "share" | "amenities" | "reviews" | "host" | "map" | "price" | "rules" | "report" | "dates" | "renters" | null;
+type DetailModal = "share" | "amenities" | "reviews" | "host" | "map" | "price" | "rules" | "report" | "dates" | "renters" | null;
 
 function CalendarMonth({ date, selected }: { date: Date; selected: string }) {
   const year = date.getFullYear();
@@ -25,6 +26,7 @@ function CalendarMonth({ date, selected }: { date: Date; selected: string }) {
 }
 
 export function PropertyDetail({ listing }: { listing: RentalListing }) {
+  const router = useRouter();
   const { isSaved, showToast } = useApp();
   const [modal, setModal] = useState<DetailModal>(null);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -37,6 +39,7 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
   const pricing = reservationPricing(listing.monthlyRent);
   const saved = isSaved(listing.id);
   const reserveHref = `/reserve/${listing.slug}?moveIn=${moveIn}&lease=${lease}&adults=${adults}&children=${children}&pets=${pets}`;
+  const openPhotoTour = (index?: number) => router.push(`/properties/${listing.slug}/photos${index === undefined ? "" : `#photo-${index + 1}`}`);
   useEffect(() => {
     const gallery = galleryRef.current;
     if (!gallery) return;
@@ -54,7 +57,7 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
   const share = async () => { const data = { title: listing.title, text: `Take a look at ${listing.title} on Kubo`, url: window.location.href }; if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.url); showToast("Link copied"); } };
   return <><nav className={`detail-section-nav ${sectionNavVisible ? "visible" : ""}`} aria-label="Property sections"><div className="detail-section-nav-inner">{[["photos", "Photos"], ["amenities", "Amenities"], ["reviews", "Reviews"], ["location", "Location"]].map(([id, label]) => <button type="button" className={activeSection === id ? "active" : ""} onClick={() => goToSection(id)} key={id}>{label}</button>)}<div className="detail-nav-reserve"><span><strong>{peso(listing.monthlyRent)}</strong> month<small><Star size={12} fill="currentColor" /> {listing.rating} · {listing.reviewCount} reviews</small></span><Link href={reserveHref} className="button primary">Reserve</Link></div></div></nav><div className="detail-page container">
     <div className="detail-heading"><div><h1>{listing.title}</h1><div className="detail-meta"><span><Star size={14} fill="currentColor" /> {listing.rating}</span><button className="link-button" type="button" onClick={() => setModal("reviews")}>{listing.reviewCount} reviews</button><span>{listing.neighborhood}, {listing.city}</span></div></div><div className="detail-actions"><button type="button" onClick={() => setModal("share")}><Share2 size={17} /><span>Share</span></button><button type="button" onClick={() => setLoginOpen(true)}><Heart size={17} fill={saved ? "currentColor" : "none"} /><span>{saved ? "Saved" : "Save"}</span></button></div></div>
-    <div className="gallery-grid" id="photos" ref={galleryRef}>{listing.gallery.map((image, index) => <button type="button" key={image} onClick={() => setModal("gallery")} aria-label={`Open photo ${index + 1}`}><Image src={image} alt={`${listing.title}, photo ${index + 1}`} fill priority={index === 0} sizes={index === 0 ? "60vw" : "25vw"} unoptimized /></button>)}<button type="button" className="show-photos" onClick={() => setModal("gallery")}><Grid3X3 size={17} />Show all photos</button></div>
+    <div className="gallery-grid" id="photos" ref={galleryRef}>{listing.gallery.map((image, index) => <button type="button" key={image} onClick={() => openPhotoTour(index)} aria-label={`Open photo ${index + 1}`}><Image src={image} alt={`${listing.title}, photo ${index + 1}`} fill priority={index === 0} sizes={index === 0 ? "60vw" : "25vw"} unoptimized /></button>)}<button type="button" className="show-photos" onClick={() => openPhotoTour()}><Grid3X3 size={17} />Show all photos</button></div>
     <div className="detail-layout"><div className="detail-main">
       <section className="listing-intro"><h2>{listingTypeLabels[listing.type]} in {listing.neighborhood}, {listing.city}</h2><p>{listing.capacity} residents · {listing.bedrooms || "Studio"} bedroom{listing.bedrooms === 1 ? "" : "s"} · {listing.beds} bed{listing.beds === 1 ? "" : "s"} · {listing.bathrooms} bath</p></section>
       <section className="guest-favorite-card"><strong>Guest<br />favorite</strong><span>One of the most loved homes on Kubo, according to renters</span><button type="button" onClick={() => setModal("reviews")}><b>{listing.rating}</b><small>★★★★★</small></button><button type="button" onClick={() => setModal("reviews")}><b>{listing.reviewCount}</b><small>Reviews</small></button></section>
@@ -72,7 +75,6 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
       <section className="listing-summary"><div><h2>Meet your host, {listing.host.name}</h2><p>{listing.host.yearsHosting} years hosting · {listing.host.responseRate}% response rate</p></div><button className="button secondary" type="button" onClick={() => setModal("host")}>Host details</button></section>
     </div>
     <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-    <Modal open={modal === "gallery"} onClose={() => setModal(null)} title="Photo tour" fullScreen><div className="gallery-modal-grid">{listing.gallery.map((image, index) => <div key={image}><Image src={image} alt={`${listing.title}, gallery photo ${index + 1}`} fill unoptimized /></div>)}</div></Modal>
     <Modal open={modal === "share"} onClose={() => setModal(null)} title="Share this place"><div className="share-grid"><button type="button" onClick={() => navigator.clipboard.writeText(window.location.href).then(() => showToast("Link copied"))}><Copy size={20} />Copy link</button><button type="button" onClick={share}><Share2 size={20} />Share</button><a href={`mailto:?subject=${encodeURIComponent(listing.title)}&body=${encodeURIComponent("Take a look at this Kubo rental: ")}`}><Mail size={20} />Email</a><button type="button" onClick={() => window.open(`https://www.messenger.com/`, "_blank")}><MessageCircle size={20} />Messenger</button><button type="button" onClick={() => window.open(`viber://forward?text=${encodeURIComponent(listing.title)}`, "_blank")}><MessageCircle size={20} />Viber</button></div></Modal>
     <Modal open={modal === "amenities"} onClose={() => setModal(null)} title="What this place offers"><div className="amenity-grid">{listing.amenities.map((amenity) => <div className="amenity-item" key={amenity}><Check size={20} />{amenity}</div>)}</div></Modal>
     <Modal open={modal === "reviews"} onClose={() => setModal(null)} title={`${listing.rating} · ${listing.reviewCount} reviews`} size="large"><label className="field-block"><span>Search reviews</span><input placeholder="Search by keyword" /></label><div className="reviews-grid">{listing.reviews.concat(listing.reviews).map((review, index) => <article className="review-card" key={`${review.id}-${index}`}><div className="review-author"><span>{review.author[0]}</span><div><strong>{review.author}</strong><small>{review.date}</small></div></div><p>{review.text}</p></article>)}</div></Modal>

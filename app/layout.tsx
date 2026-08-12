@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { AppProvider } from "./app-provider";
@@ -16,5 +17,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#fffdf8" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><AppProvider><NewTabNavigation /><SiteHeader /><main id="main-content">{children}</main><SiteFooter /></AppProvider></body></html>;
+  return <html lang="en"><body><AppProvider><NewTabNavigation /><Suspense fallback={null}><SiteHeader /></Suspense><main id="main-content">{children}</main><SiteFooter /></AppProvider></body></html>;
 }

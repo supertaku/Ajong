@@ -17,6 +17,7 @@ import { paramsToSearch } from "@/lib/search";
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const onPhotoTourPage = /^\/properties\/[^/]+\/photos$/.test(pathname);
   const searchParams = useSearchParams();
   const onResultsPage = pathname === "/properties";
   const onPropertyPage = pathname.startsWith("/properties/");
@@ -33,6 +34,7 @@ export function SiteHeader() {
   const searchWidth = useSpring(useTransform(scrollY, [0, 150], [920, 500]), { stiffness: 290, damping: 34, mass: .7 });
   const searchY = useSpring(useTransform(scrollY, [0, 150], [120, 0]), { stiffness: 290, damping: 34, mass: .7 });
   useMotionValueEvent(scrollY, "change", (value) => setSearchCollapsed(value >= 138));
+  if (onPhotoTourPage) return null;
   return <>
     <header className={`site-header ${hasMarketSearch ? "results-site-header" : ""} ${onPropertyPage ? "property-site-header" : ""} ${searchCollapsed ? "search-collapsed" : ""} ${searchOpen ? "search-open" : ""}`}><div className="header-inner">
       <Link href="/" className="brand" aria-label="Kubo home"><Image src="/images/kubo-mascot.png" alt="" width={42} height={42} priority unoptimized /><span>Kubo</span></Link>

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, Check, Copy, Flag, Grid3X3, Heart, KeyRound, Mail, MapPin, MessageCircle, Share2, ShieldCheck, Star, Wifi } from "lucide-react";
+import { BedDouble, Building2, Check, CircleCheck, Copy, Flag, Gift, Grid3X3, Heart, ImageIcon, KeyRound, Leaf, Mail, Map as MapIcon, MapPin, MessageCircle, Share2, ShieldCheck, Sofa, SprayCan, Star, Tag, Wifi } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/app/app-provider";
 import { Counter, Modal } from "@/components/modal";
@@ -15,6 +15,24 @@ import type { RentalListing } from "@/lib/types";
 
 const PropertyMap = dynamic(() => import("@/components/property-map").then((module) => module.PropertyMap), { ssr: false, loading: () => <div className="map-shell" /> });
 type DetailModal = "share" | "amenities" | "reviews" | "host" | "map" | "price" | "rules" | "report" | "dates" | "renters" | null;
+
+const reviewDimensions = [
+  { label: "Cleanliness", value: "5.0", icon: SprayCan },
+  { label: "Accuracy", value: "5.0", icon: CircleCheck },
+  { label: "Move-in", value: "4.9", icon: KeyRound },
+  { label: "Communication", value: "5.0", icon: MessageCircle },
+  { label: "Location", value: "4.8", icon: MapIcon },
+  { label: "Value", value: "4.9", icon: Tag },
+];
+
+const reviewTopics = [
+  { label: "View", count: 6, icon: ImageIcon },
+  { label: "Hospitality", count: 7, icon: Gift },
+  { label: "Comfort", count: 4, icon: BedDouble },
+  { label: "Indoor spaces", count: 4, icon: Sofa },
+  { label: "Value", count: 4, icon: Tag },
+  { label: "Location", count: 3, icon: MapPin },
+];
 
 function CalendarMonth({ date, selected }: { date: Date; selected: string }) {
   const year = date.getFullYear();
@@ -55,7 +73,7 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
   }, []);
   const goToSection = (id: string) => { setActiveSection(id); document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }); };
   const share = async () => { const data = { title: listing.title, text: `Take a look at ${listing.title} on Kubo`, url: window.location.href }; if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.url); showToast("Link copied"); } };
-  return <><nav className={`detail-section-nav ${sectionNavVisible ? "visible" : ""}`} aria-label="Property sections"><div className="detail-section-nav-inner">{[["photos", "Photos"], ["amenities", "Amenities"], ["reviews", "Reviews"], ["location", "Location"]].map(([id, label]) => <button type="button" className={activeSection === id ? "active" : ""} onClick={() => goToSection(id)} key={id}>{label}</button>)}<div className="detail-nav-reserve"><span><strong>{peso(listing.monthlyRent)}</strong> month<small><Star size={12} fill="currentColor" /> {listing.rating} · {listing.reviewCount} reviews</small></span><Link href={reserveHref} className="button primary">Reserve</Link></div></div></nav><div className="detail-page container">
+  return <><nav className={`detail-section-nav ${sectionNavVisible ? "visible" : ""}`} aria-label="Property sections"><div className="detail-section-nav-inner">{[["photos", "Photos"], ["amenities", "Amenities"], ["reviews", "Reviews"], ["location", "Location"]].map(([id, label]) => <button type="button" className={activeSection === id ? "active" : ""} onClick={() => goToSection(id)} key={id}>{label}</button>)}</div></nav><div className="detail-page container">
     <div className="detail-heading"><div><h1>{listing.title}</h1><div className="detail-meta"><span><Star size={14} fill="currentColor" /> {listing.rating}</span><button className="link-button" type="button" onClick={() => setModal("reviews")}>{listing.reviewCount} reviews</button><span>{listing.neighborhood}, {listing.city}</span></div></div><div className="detail-actions"><button type="button" onClick={() => setModal("share")}><Share2 size={17} /><span>Share</span></button><button type="button" onClick={() => setLoginOpen(true)}><Heart size={17} fill={saved ? "currentColor" : "none"} /><span>{saved ? "Saved" : "Save"}</span></button></div></div>
     <div className="gallery-grid" id="photos" ref={galleryRef}>{listing.gallery.map((image, index) => <button type="button" key={image} onClick={() => openPhotoTour(index)} aria-label={`Open photo ${index + 1}`}><Image src={image} alt={`${listing.title}, photo ${index + 1}`} fill priority={index === 0} sizes={index === 0 ? "60vw" : "25vw"} unoptimized /></button>)}<button type="button" className="show-photos" onClick={() => openPhotoTour()}><Grid3X3 size={17} />Show all photos</button></div>
     <div className="detail-layout"><div className="detail-main">
@@ -69,7 +87,36 @@ export function PropertyDetail({ listing }: { listing: RentalListing }) {
       <section className="availability-section"><h2>{lease} months in {listing.city}</h2><p>Move in {new Date(moveIn).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</p><div className="availability-calendars"><CalendarMonth date={new Date(`${moveIn}T00:00:00`)} selected={moveIn} /><CalendarMonth date={new Date(new Date(`${moveIn}T00:00:00`).getFullYear(), new Date(`${moveIn}T00:00:00`).getMonth() + 1, 1)} selected={moveIn} /></div><button type="button" className="button secondary" onClick={() => setModal("dates")}>Edit move-in and lease</button></section>
     </div><aside className="booking-aside"><button type="button" className="price-assurance" onClick={() => setModal("price")}><span>🏷️</span>Prices include all fees</button><div className="booking-card"><div className="booking-price"><div><strong>{peso(listing.monthlyRent)}</strong> month</div><span><Star size={14} fill="currentColor" />{listing.rating}</span></div><div className="booking-fields"><button type="button" onClick={() => setModal("dates")}><b>Move in</b><span>{new Date(moveIn).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</span></button><button type="button" onClick={() => setModal("renters")}><b>Renters</b><span>{adults + children} resident{adults + children === 1 ? "" : "s"}</span></button></div><Link href={reserveHref} className="button primary wide">Reserve</Link><p className="charge-note">You won&apos;t be charged for the full lease today</p><div className="price-lines"><div className="price-line"><button type="button" className="link-button" onClick={() => setModal("price")}>Holding deposit</button><span>{peso(pricing.holdingDeposit)}</span></div><div className="price-line"><button type="button" className="link-button" onClick={() => setModal("price")}>Kubo service fee</button><span>{peso(pricing.serviceFee)}</span></div><div className="price-line price-total"><span>Due today</span><span>{peso(pricing.dueToday)}</span></div></div></div><button type="button" className="report-listing-link" onClick={() => setModal("report")}><Flag size={16} />Report this listing</button></aside></div>
     <div className="detail-after-booking">
-      <section id="reviews" className="review-detail-section"><div className="review-hero"><div className="review-laurels"><span>❧</span><b>{listing.rating}</b><span>❧</span></div><h2>Renter favorite</h2><p>This home is a renter favorite based on ratings, reviews, and reliability</p><button type="button" className="link-button" onClick={() => setModal("reviews")}>How reviews work</button></div><div className="rating-dimensions"><div className="rating-bars"><strong>Overall rating</strong>{[5,4,3,2,1].map((score) => <div key={score}><span>{score}</span><i><b style={{ width: `${score === 5 ? 96 : score === 4 ? 32 : 5}%` }} /></i></div>)}</div>{[["Cleanliness", "5.0"], ["Accuracy", "5.0"], ["Move-in", "4.9"], ["Communication", "5.0"], ["Location", "4.8"], ["Value", "4.9"]].map(([label, value]) => <div className="rating-dimension" key={label}><span>{label}</span><b>{value}</b><Star size={22} /></div>)}</div><div className="review-topic-row">{["Neighborhood", "Hospitality", "Comfort", "Indoor spaces", "Value", "Location"].map((topic, index) => <button type="button" key={topic} onClick={() => setModal("reviews")}>{["📍", "🎁", "🛏️", "🛋️", "🏷️", "🗺️"][index]} {topic} <span>{3 + index}</span></button>)}</div><div className="reviews-grid">{listing.reviews.slice(0, 4).map((review) => <article className="review-card" key={review.id}><div className="review-author"><span>{review.author[0]}</span><div><strong>{review.author}</strong><small>{review.date}</small></div></div><div className="review-stars">★★★★★</div><p>{review.text}</p></article>)}</div><button className="button secondary" type="button" onClick={() => setModal("reviews")}>Show all {listing.reviewCount} reviews</button></section>
+      <section id="reviews" className="review-detail-section">
+        <div className="review-hero">
+          <div className="review-score-lockup" aria-label={`${listing.rating} out of 5`}>
+            <span className="review-laurel review-laurel-left" aria-hidden="true">{[0, 1, 2].map((leaf) => <Leaf key={leaf} />)}</span>
+            <strong>{listing.rating}</strong>
+            <span className="review-laurel review-laurel-right" aria-hidden="true">{[0, 1, 2].map((leaf) => <Leaf key={leaf} />)}</span>
+          </div>
+          <h2>Renter favorite</h2>
+          <p>This home is a renter favorite based on ratings, reviews, and reliability</p>
+          <button type="button" className="link-button" onClick={() => setModal("reviews")}>How reviews work</button>
+        </div>
+        <div className="rating-dimensions">
+          <div className="rating-bars">
+            <strong>Overall rating</strong>
+            {[5, 4, 3, 2, 1].map((score, index) => <div key={score}><span>{score}</span><i><b style={{ width: `${[91, 7, 2, 0, 0][index]}%` }} /></i></div>)}
+          </div>
+          {reviewDimensions.map((dimension) => {
+            const Icon = dimension.icon;
+            return <div className="rating-dimension" key={dimension.label}><span>{dimension.label}</span><b>{dimension.value}</b><Icon aria-hidden="true" /></div>;
+          })}
+        </div>
+        <div className="review-topic-row" aria-label="Popular review topics">
+          {reviewTopics.map((topic) => {
+            const Icon = topic.icon;
+            return <button type="button" key={topic.label} onClick={() => setModal("reviews")}><Icon aria-hidden="true" /><strong>{topic.label}</strong><span>{topic.count}</span></button>;
+          })}
+        </div>
+        <div className="reviews-grid">{listing.reviews.slice(0, 4).map((review) => <article className="review-card" key={review.id}><div className="review-author"><span>{review.author[0]}</span><div><strong>{review.author}</strong><small>{review.date}</small></div></div><div className="review-stars" aria-label={`${review.rating} out of 5 stars`}>★★★★★</div><p>{review.text}</p></article>)}</div>
+        <button className="button secondary" type="button" onClick={() => setModal("reviews")}>Show all {listing.reviewCount} reviews</button>
+      </section>
       <section id="location"><h2>Where you&apos;ll live</h2><p>{listing.neighborhood}, {listing.city}</p><button type="button" className="detail-map" onClick={() => setModal("map")} aria-label="Open full map"><PropertyMap listings={[listing]} selectedId={listing.id} /></button><div className="nearby-grid">{listing.nearby.map((place) => <div className="nearby-card" key={place.name}><strong>{place.name}</strong><small>{place.minutes} minutes · {place.kind}</small></div>)}</div></section>
       <section><h2>House rules</h2><div className="rules-list">{listing.houseRules.slice(0, 3).map((rule) => <div key={rule}>{rule}</div>)}</div><button className="button secondary" type="button" onClick={() => setModal("rules")}>Show all rules</button></section>
       <section className="listing-summary"><div><h2>Meet your host, {listing.host.name}</h2><p>{listing.host.yearsHosting} years hosting · {listing.host.responseRate}% response rate</p></div><button className="button secondary" type="button" onClick={() => setModal("host")}>Host details</button></section>
